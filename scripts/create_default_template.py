@@ -12,7 +12,7 @@ sys.path.insert(0, str(ROOT))
 from pptx import Presentation  # noqa: E402
 from pptx.util import Inches  # noqa: E402
 
-from modules.slidebuilder.theme import DEFAULT_THEME  # noqa: E402
+from modules.scenegen.tokens import TOKENS as DEFAULT_THEME  # noqa: E402
 
 
 def main() -> None:

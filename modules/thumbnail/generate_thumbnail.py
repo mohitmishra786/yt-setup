@@ -7,7 +7,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 from core.logging_setup import get_logger
-from modules.slidebuilder.theme import DEFAULT_THEME
+from modules.scenegen.tokens import TOKENS as DEFAULT_THEME
 
 log = get_logger(__name__)
 

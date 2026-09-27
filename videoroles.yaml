@@ -1,0 +1,36 @@
+version: 1
+
+# Video Production Agent Roles — governing video visual creation
+# (Separate from agentroles.yaml which governs repository software development)
+
+roles:
+  director:
+    primary: anthropic/claude-opus-4-8
+    notes: "Taste-bearing visual director — plans storyboard.json from outline.json with CoreDumpped/3B1B diagram choreography and pacing holds."
+
+  scene-coder:
+    primary: anthropic/claude-sonnet-4-6
+    notes: "Scene Coder — generates individual scene render files (HTML/CSS/JS) strictly obeying modules/scenegen/tokens.py and component library."
+
+  visual-reviewer:
+    primary: anthropic/claude-sonnet-4-6
+    notes: "Visual Reviewer — inspects still frames and executes automated visual-QA checks against design tokens, word pacing, and sequential reveals; requests targeted re-renders."
+
+  narrator-sync:
+    primary: anthropic/claude-haiku-4-5
+    notes: "Narrator Sync — aligns audio narration durations to storyboard beat timing so animation holds match spoken words."
+
+routing:
+  mode: static
+  dynamic:
+    enabled: false
+    escalate_on: [qa_failure, pacing_mismatch, visual_artifact]
+    cache_aware: true
+
+observability:
+  cost_tracking: true
+  tag_calls_with_role: true
+
+targets:
+  - opencode: ./opencode.json
+  - claude_code: ./.claude/agents/

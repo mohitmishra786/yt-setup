@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Any
 
 from core.llm import LLMError, client_from_config
 from core.logging_setup import get_logger
@@ -40,6 +41,10 @@ def build_stub_outline(topic: str) -> SlideOutline:
                     "and how to apply them in practice."
                 ),
                 visual_hint="title card",
+                visual_beat=(
+                    "Centered title block with subtitle card, revealing topic keyword in "
+                    "accent cyan with subtle underline draw-in"
+                ),
             ),
             Slide(
                 index=2,
@@ -51,6 +56,10 @@ def build_stub_outline(topic: str) -> SlideOutline:
                     "into a practical mental model."
                 ),
                 visual_hint="three-column diagram",
+                visual_beat=(
+                    "Three labeled node boxes (Concept A, B, C) arranged horizontally with "
+                    "directional connecting arrows revealing left-to-right"
+                ),
             ),
             Slide(
                 index=3,
@@ -62,13 +71,17 @@ def build_stub_outline(topic: str) -> SlideOutline:
                     "check the description for chapters and resources."
                 ),
                 visual_hint="outro CTA",
+                visual_beat=(
+                    "Summary container showing verified checkmarks and roadmap timeline "
+                    "pointing forward"
+                ),
             ),
         ],
         chapter_skeleton=[],
     )
 
 
-def build_stub_outline_dict(topic: str) -> dict:
+def build_stub_outline_dict(topic: str) -> dict[str, Any]:
     data = build_stub_outline(topic).model_dump(by_alias=True)
     data["_stub"] = True
     return data
@@ -174,14 +187,20 @@ class ScriptwriterStage:
             os.getenv("YT_STUDIO_STUB_LLM") == "1"
             or project.checkpoint.options.get("stub_llm") is True
         )
+        llm_client = client_from_config(project.config)
         use_real = (
             not force_stub
-            and bool(os.getenv("ANTHROPIC_API_KEY", "").strip())
+            and llm_client.available
             and os.getenv("YT_STUDIO_FORCE_STUB") != "1"
         )
 
         if use_real:
-            log.info("Scriptwriter (Claude) topic=%r model=%s", topic, project.config.llm.model)
+            log.info(
+                "Scriptwriter (%s) topic=%r model=%s",
+                type(llm_client).__name__,
+                topic,
+                llm_client.model,
+            )
             try:
                 outline = generate_outline_with_claude(project, topic)
                 seo = generate_seo_with_claude(project, topic, outline)
@@ -191,14 +210,14 @@ class ScriptwriterStage:
                 if project.checkpoint.options.get("allow_stub_fallback") or os.getenv(
                     "YT_STUDIO_ALLOW_LLM_FALLBACK"
                 ) == "1":
-                    log.error("Claude failed (%s); falling back to stub outline", exc)
+                    log.error("LLM call failed (%s); falling back to stub outline", exc)
                     outline = build_stub_outline(topic)
                     seo = build_stub_seo(topic)
                     stub = True
                 else:
                     raise
         else:
-            reason = "no ANTHROPIC_API_KEY" if not os.getenv("ANTHROPIC_API_KEY") else "stub forced"
+            reason = "no API key configured" if not llm_client.available else "stub forced"
             log.info("Scriptwriter (stub: %s) topic=%r", reason, topic)
             outline = build_stub_outline(topic)
             seo = build_stub_seo(topic)

@@ -25,6 +25,8 @@ class LLMSettings(BaseModel):
     model: str = "claude-sonnet-4-20250514"
     max_tokens: int = 8192
     temperature: float = 0.4
+    base_url: str | None = None
+    api_key: str | None = None
 
 
 class ElevenLabsSettings(BaseModel):
@@ -121,7 +123,8 @@ class PipelineSettings(BaseModel):
     stages: list[str] = Field(
         default_factory=lambda: [
             "scriptwriter",
-            "slidebuilder",
+            "storyboard",
+            "scenegen",
             "voice",
             "video_assembler",
             "transcriber",

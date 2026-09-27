@@ -53,7 +53,7 @@ def run_cmd(
     only: Optional[str] = typer.Option(
         None,
         "--only",
-        help="Comma-separated stages to run (e.g. scriptwriter,slidebuilder).",
+        help="Comma-separated stages to run (e.g. scriptwriter,storyboard,scenegen).",
     ),
     skip: Optional[str] = typer.Option(
         None,
@@ -227,15 +227,16 @@ def run_cmd(
             artifacts=["outline.json", "seo.json"],
             meta={"imported": True, "source": "pptx"},
         )
-        proj.checkpoint.mark_completed(
-            "slidebuilder",
-            artifacts=["slides.pptx"],
-            meta={"imported": True, "source": str(pptx)},
-        )
+        if "slidebuilder" in proj.checkpoint.stages:
+            proj.checkpoint.mark_completed(
+                "slidebuilder",
+                artifacts=["slides.pptx"],
+                meta={"imported": True, "source": str(pptx)},
+            )
         proj.save()
         if from_stage is None and only_list is None:
-            from_stage = "voice"
-            console.print("[dim]Starting from voice (scriptwriter+slidebuilder imported)[/dim]")
+            from_stage = "voice" if "voice" in proj.checkpoint.stages else "storyboard"
+            console.print(f"[dim]Starting from {from_stage} (scriptwriter imported)[/dim]")
 
     if outline_json is not None:
         from modules.slidebuilder.import_pptx import import_outline_json
@@ -253,9 +254,9 @@ def run_cmd(
             meta={"imported": True, "source": "outline_json"},
         )
         proj.save()
-        if from_stage is None and only_list is None and not proj.paths.slides.exists():
-            from_stage = "slidebuilder"
-            console.print("[dim]Starting from slidebuilder (outline imported)[/dim]")
+        if from_stage is None and only_list is None:
+            from_stage = "storyboard" if "storyboard" in proj.checkpoint.stages else "scenegen"
+            console.print(f"[dim]Starting from {from_stage} (outline imported)[/dim]")
 
     console.print(f"[bold]Project[/bold]  {proj.project_id}")
     console.print(f"[bold]Path[/bold]     {proj.paths.root}")
@@ -317,15 +318,16 @@ def import_pptx_cmd(
     proj.checkpoint.mark_completed(
         "scriptwriter", artifacts=["outline.json", "seo.json"], meta={"imported": True}
     )
-    proj.checkpoint.mark_completed(
-        "slidebuilder", artifacts=["slides.pptx"], meta={"imported": True}
-    )
+    if "slidebuilder" in proj.checkpoint.stages:
+        proj.checkpoint.mark_completed(
+            "slidebuilder", artifacts=["slides.pptx"], meta={"imported": True}
+        )
     proj.save()
     console.print(f"[green]Project[/green] {proj.project_id}")
     console.print(f"  slides: {info['slide_count']}")
     console.print(f"  path:   {proj.paths.root}")
     console.print(
-        f"Next: python cli.py run --project {proj.project_id} --from-stage voice"
+        f"Next: python cli.py run --project {proj.project_id} --from-stage storyboard"
         + (f" --voice {voice}" if voice else "")
     )
 
@@ -339,7 +341,7 @@ def import_outline_cmd(
     project_id: Optional[str] = typer.Option(None, "--project", "-p"),
     config: Optional[Path] = typer.Option(None, "--config", "-c"),
 ) -> None:
-    """Import outline JSON without Anthropic API; run slidebuilder next."""
+    """Import outline JSON without Anthropic API; run storyboard next."""
     ensure_utf8_stdio()
     cfg = load_config(config)
     setup_logging(cfg.pipeline.log_level)
@@ -357,7 +359,7 @@ def import_outline_cmd(
     proj.save()
     console.print(f"[green]Project[/green] {proj.project_id} slides={info['slide_count']}")
     console.print(
-        f"Next: python cli.py run --project {proj.project_id} --from-stage slidebuilder"
+        f"Next: python cli.py run --project {proj.project_id} --from-stage storyboard"
     )
 
 

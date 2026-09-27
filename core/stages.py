@@ -57,16 +57,18 @@ def build_default_registry() -> dict[str, Stage]:
     # Import side-effects register stubs (and later real implementations)
     from modules.chapters.generate_chapters import ChaptersStage
     from modules.publisher.youtube_upload import PublisherStage
+    from modules.scenegen.stage import ScenegenStage
     from modules.scriptwriter.generate_outline import ScriptwriterStage
     from modules.shorts.vantage_adapter import ShortsStage
-    from modules.slidebuilder.build_pptx import SlidebuilderStage
+    from modules.storyboard.generator import StoryboardStage
     from modules.transcriber.transcribe import TranscriberStage
     from modules.video_assembler.assemble import VideoAssemblerStage
     from modules.voice.engine import VoiceStage
 
     stages: list[Stage] = [
         ScriptwriterStage(),
-        SlidebuilderStage(),
+        StoryboardStage(),
+        ScenegenStage(),
         VoiceStage(),
         VideoAssemblerStage(),
         TranscriberStage(),

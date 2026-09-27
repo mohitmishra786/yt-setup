@@ -49,13 +49,14 @@ yt-setup/
 ├── pyproject.toml
 ├── core/                 # config, checkpoint, pipeline, schemas, llm client
 ├── modules/
-│   ├── scriptwriter/     # Claude outline + SEO
-│   ├── slidebuilder/     # python-pptx branded decks
+│   ├── scriptwriter/     # Claude / NVIDIA NIM outline + SEO
+│   ├── storyboard/       # Visual choreography (storyboard.json)
+│   ├── scenegen/         # Design tokens, component library, Playwright renderer & Visual QA
 │   ├── voice/            # Chatterbox / edge-tts / ElevenLabs / XTTS
-│   ├── video_assembler/  # frames + FFmpeg + optional BGM
+│   ├── video_assembler/  # Scene concatenation + audio muxing + BGM
 │   ├── transcriber/      # faster-whisper / WhisperX
 │   ├── chapters/         # YouTube chapter markers
-│   ├── shorts/           # Vantage adapter
+│   ├── shorts/           # Vantage adapter / local extraction
 │   ├── subtitles/        # FFmpeg burn-in
 │   ├── thumbnail/        # Pillow thumbnails
 │   └── publisher/        # YouTube Data API v3
@@ -195,16 +196,27 @@ pytest
 
 ## Pipeline stages
 
-1. **scriptwriter** — Claude (or stub) -> `outline.json` + `seo.json`
-2. **slidebuilder** — branded `slides.pptx` with speaker notes
-3. **voice** — one MP3 per slide under `audio/`
-4. **video_assembler** — frames + FFmpeg -> `final.mp4` (optional BGM)
-5. **transcriber** — `transcript.json` / `.srt` / `.vtt`
-6. **chapters** — `chapters.txt` (first marker must be `0:00`); merges into SEO description
-7. **shorts** — Vantage or local keyword clips under `shorts/`
-8. **publisher** — thumbnail + private upload or dry-run `publish_manifest.json`
+1. **scriptwriter** — Claude / NVIDIA NIM (or stub) -> `outline.json` + `seo.json`
+2. **storyboard** — Director -> choreographed visual beats (`storyboard.json`)
+3. **scenegen** — Animated HTML/CSS scenes rendered to per-beat `scene_XX.mp4` + Visual QA
+4. **voice** — one MP3 per slide/beat under `audio/` via Chatterbox or configured engine
+5. **video_assembler** — animated scenes + narration audio -> `final.mp4` (optional BGM)
+6. **transcriber** — `transcript.json` / `.srt` / `.vtt`
+7. **chapters** — `chapters.txt` (first marker must be `0:00`); merges into SEO description
+8. **shorts** — Vantage or local keyword clips under `shorts/`
+9. **publisher** — thumbnail + private upload or dry-run `publish_manifest.json`
 
 Orchestration: `core/pipeline.py`. Completed stages in `state.json` are skipped unless `--force` / `--only`.
+
+---
+
+## Agent-Native Skills (Surface B)
+
+Anyone running inside Claude Code, OpenCode, or any agent-skill-compatible tool can build videos without an Anthropic API key by invoking the skills:
+- `/create-video "topic"` — runs long-form CoreDumpped/3B1B-style animated video creation.
+- `/create-short "topic"` — runs punchy 30-60s Short/Reel creation.
+
+Both interfaces share the identical design tokens, storyboard schema, and component library.
 
 ---
 
@@ -212,6 +224,7 @@ Orchestration: `core/pipeline.py`. Completed stages in `state.json` are skipped 
 
 See `config.yaml.example`.
 
+- `llm.provider`: `anthropic` | `nvidia` (NVIDIA NIM hosted endpoints) | `openai`
 - `voice.engine`: `chatterbox` | `edge_tts` | `mac_say` | `elevenlabs` | `xtts` | `silence`
 - `transcription.engine`: `faster-whisper` (default) or `whisperx`
 - `music.enabled` + `music.track_path` for a ducked bed under narration
@@ -221,9 +234,13 @@ See `config.yaml.example`.
 
 | Variable | Effect |
 |---|---|
+| `LLM_PROVIDER=nvidia` | Route LLM completions to NVIDIA NIM endpoints |
+| `NVIDIA_API_KEY` | API key for build.nvidia.com NIM hosted models |
+| `YT_STUDIO_STUB_SCENES=1` | Fast synthetic MP4 scenes for CI / testing |
 | `YT_STUDIO_STUB_VOICE=1` | Silence clips (no TTS network/GPU) |
 | `YT_STUDIO_STUB_TRANSCRIBE=1` | Stub transcript |
-| `YT_STUDIO_STUB_LLM=1` | Force outline/SEO stub even with API key |
+| `YT_STUDIO_STUB_LLM=1` | Force outline/storyboard stub even with API key |
+| `YT_STUDIO_STRICT_QA=1` | Fail pipeline run if visual QA detects violations |
 | `YT_STUDIO_SKIP_VANTAGE=1` | Local shorts only |
 | `YT_STUDIO_PUBLISH_DRY_RUN=1` | Never upload |
 | `YT_STUDIO_WHISPER_MODEL=tiny` | Faster local transcription |

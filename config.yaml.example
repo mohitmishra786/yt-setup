@@ -89,7 +89,8 @@ publisher:
 pipeline:
   stages:
     - scriptwriter
-    - slidebuilder
+    - storyboard
+    - scenegen
     - voice
     - video_assembler
     - transcriber
