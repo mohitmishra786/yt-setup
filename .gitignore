@@ -216,3 +216,27 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- yt-studio ---
+.env
+config.yaml
+.credentials/
+projects/*
+!projects/.gitkeep
+*.mp4
+*.mp3
+*.wav
+*.pptx
+!modules/slidebuilder/templates/**
+.DS_Store
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+htmlcov/
+dist/
+*.egg-info/
+
+# Voice source recordings (raw)
+recordings/
+modules/voice/voices/*/
+!modules/voice/voices/.gitkeep

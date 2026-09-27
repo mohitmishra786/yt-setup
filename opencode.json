@@ -1,0 +1,39 @@
+{
+  "agent": {
+    "planner": {
+      "mode": "primary",
+      "model": "anthropic/claude-opus-4-8",
+      "description": "Orchestrator \u2014 architecture, planning, and design decisions."
+    },
+    "implementer": {
+      "mode": "primary",
+      "model": "anthropic/claude-sonnet-4-6",
+      "description": "Implementation and coding tasks."
+    },
+    "reviewer": {
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-6",
+      "description": "Code review and quality checks."
+    },
+    "researcher": {
+      "mode": "subagent",
+      "model": "anthropic/claude-opus-4-8",
+      "description": "Research, deep reasoning, and ambiguity resolution."
+    },
+    "fixer": {
+      "mode": "subagent",
+      "model": "anthropic/claude-haiku-4-5",
+      "description": "Basic bug fixes and mechanical replacements."
+    },
+    "tester": {
+      "mode": "subagent",
+      "model": "anthropic/claude-haiku-4-5",
+      "description": "Test generation and validation."
+    },
+    "summarizer": {
+      "mode": "subagent",
+      "model": "anthropic/claude-haiku-4-5",
+      "description": "Summarization and commit messages."
+    }
+  }
+}

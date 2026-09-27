@@ -1,0 +1,45 @@
+version: 1
+
+roles:
+  planner:
+    primary: anthropic/claude-opus-4-8
+    notes: "Orchestrator — architecture, planning, and design decisions."
+
+  implementer:
+    primary: anthropic/claude-sonnet-4-6
+    notes: "Implementation and coding tasks."
+
+  reviewer:
+    primary: anthropic/claude-sonnet-4-6
+    notes: "Code review and quality checks."
+
+  researcher:
+    primary: anthropic/claude-opus-4-8
+    notes: "Research, deep reasoning, and ambiguity resolution."
+
+  fixer:
+    primary: anthropic/claude-haiku-4-5
+    notes: "Basic bug fixes and mechanical replacements."
+
+  tester:
+    primary: anthropic/claude-haiku-4-5
+    notes: "Test generation and validation."
+
+  summarizer:
+    primary: anthropic/claude-haiku-4-5
+    notes: "Summarization and commit messages."
+
+routing:
+  mode: static
+  dynamic:
+    enabled: false
+    escalate_on: [low_confidence, test_failure, plan_revision]
+    cache_aware: true
+
+observability:
+  cost_tracking: true
+  tag_calls_with_role: true
+
+targets:
+  - opencode: ./opencode.json
+  - claude_code: ./.claude/agents/

@@ -1,0 +1,100 @@
+# yt-studio — global configuration
+# Copy to config.yaml and adjust. Secrets live in .env only.
+
+project:
+  root: projects
+  video_width: 1920
+  video_height: 1080
+  shorts_width: 1080
+  shorts_height: 1920
+  fps: 30
+
+llm:
+  provider: anthropic
+  model: claude-sonnet-4-20250514
+  max_tokens: 8192
+  temperature: 0.4
+
+voice:
+  # chatterbox = local pro clone (recommended; MIT Chatterbox)
+  # elevenlabs = paid Professional/Instant Voice Clone id
+  # edge_tts / mac_say = generic (not your voice) — only if require_clone: false
+  engine: chatterbox
+  default_voice: default
+  sample_rate: 24000
+  require_clone: true
+  edge_tts_voice: en-US-GuyNeural
+  chatterbox_exaggeration: null
+  chatterbox_cfg_weight: null
+  elevenlabs:
+    model_id: eleven_multilingual_v2
+    stability: 0.5
+    similarity_boost: 0.75
+
+music:
+  enabled: false
+  track_path: ""
+  music_volume: 0.12
+  duck_voice_threshold: 0.02
+
+video:
+  libreoffice_bin: ""
+  ffmpeg_bin: ffmpeg
+  crossfade_seconds: 0.35
+  video_codec: libx264
+  audio_codec: aac
+  crf: 18
+  preset: medium
+
+transcription:
+  # faster-whisper (reliable default) | whisperx (when installed)
+  engine: faster-whisper
+  model: base
+  device: auto
+  compute_type: int8
+  language: en
+  align: true
+  diarize: false
+
+chapters:
+  min_chapter_gap_seconds: 20
+  max_chapters: 40
+
+shorts:
+  vantage_api_url: http://127.0.0.1:8080
+  timeout_seconds: 600
+  default_keywords: []
+
+subtitles:
+  font: Arial
+  font_size: 42
+  font_size_shorts: 56
+  primary_color: "&H00FFFFFF"
+  outline_color: "&H00000000"
+  outline: 2
+  margin_v: 60
+
+thumbnail:
+  width: 1280
+  height: 720
+  font: Arial
+  max_title_chars: 60
+
+publisher:
+  default_privacy: private
+  category_id: "27"
+  token_path: .credentials/youtube_token.json
+  client_secrets_path: .credentials/client_secret.json
+
+pipeline:
+  stages:
+    - scriptwriter
+    - slidebuilder
+    - voice
+    - video_assembler
+    - transcriber
+    - chapters
+    - shorts
+    - publisher
+  fail_fast: true
+  log_level: INFO
