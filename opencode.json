@@ -1,5 +1,21 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "command": {
+    "create-short": {
+      "description": "Produce a punchy, 30-60 second technical Short/Reel with minimalist diagram motion",
+      "template": "Produce a 30-60 second technical Short/Reel following skills/create-short/SKILL.md on the topic: $ARGUMENTS"
+    },
+    "create-video": {
+      "description": "Produce an 8-15 minute long-form technical explainer video with minimalist diagram motion",
+      "template": "Produce an 8-15 minute long-form technical explainer video following skills/create-video/SKILL.md on the topic: $ARGUMENTS"
+    }
+  },
+  "skills": {
+    "paths": [
+      "./skills",
+      "./.opencode/skills"
+    ]
+  },
   "agent": {
     "planner": {
       "mode": "primary",
