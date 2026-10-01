@@ -56,6 +56,7 @@ def build_default_registry() -> dict[str, Stage]:
     """
     # Import side-effects register stubs (and later real implementations)
     from modules.chapters.generate_chapters import ChaptersStage
+    from modules.hyperframes.stage import HyperframesStage
     from modules.publisher.youtube_upload import PublisherStage
     from modules.scenegen.stage import ScenegenStage
     from modules.scriptwriter.generate_outline import ScriptwriterStage
@@ -71,6 +72,7 @@ def build_default_registry() -> dict[str, Stage]:
         ScenegenStage(),
         VoiceStage(),
         VideoAssemblerStage(),
+        HyperframesStage(),
         TranscriberStage(),
         ChaptersStage(),
         ShortsStage(),
