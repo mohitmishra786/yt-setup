@@ -19,9 +19,26 @@ Source: [github.com/latent-spaces/brag](https://github.com/latent-spaces/brag)
 4. **Perception-Aware Hold Times**:
    - The rule that on-screen text must remain visible long enough to be read by a human (~0.3s per word), and that pace comes from choreography rather than pulling text away prematurely.
 
+5. **Brag production discipline, retuned for technical explainers (2026-09)** — adapted from
+   `skills/brag/SKILL.md` and `references/step-2..4` (MIT):
+   - Plan → composition brief → HyperFrames build → single `hyperframes check` gate → render.
+   - The hook-first rule, "show the real thing", "make it alive", "every frame postable", the
+     reading-time floor, tone presets, the plan template shape, and the poster-as-frame-0 bake.
+   - Written up in `skills/create-video/references/` with our own wording, palette, and
+     technical-explainer rules (real code/compiler output, one live accent, type minimums,
+     vertical safe zones, long-form chapter arcs).
+
 ### What Was NOT Used from `brag`
-- **Creative Wording & Content**: Brag is tuned for 15–25 second product-launch hype reels with SaaS marketing copy. Its tone, copy, and product-demo heuristics do not apply to sustained 8–15 minute technical/systems explainers.
-- **External SaaS Dependency**: Brag relies on Hyperframes. yt-setup's visual engine runs **100% locally** using Playwright, FFmpeg, and Python without external SaaS dependencies.
+- **Creative Wording & Content**: Brag's product-launch copy, tone text, and share-copy
+  templates are not reused.
+- **Bundled assets**: Brag's music and SFX files are not copied; audio is resolved through
+  HyperFrames `media-use`.
+- **The skill itself**: brag is not installed or invoked; `/create-video` and
+  `/create-short` are standalone workflows.
+
+HyperFrames (open source, renders locally with headless Chrome + FFmpeg) is now the visual
+engine for the agent surface. An earlier version of this file said it was an "external
+SaaS dependency"; that was wrong — cloud rendering is optional and never used here.
 
 ---
 

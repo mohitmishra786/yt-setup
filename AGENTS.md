@@ -28,14 +28,47 @@ YT_STUDIO_STUB_VOICE=1 YT_STUDIO_STUB_TRANSCRIBE=1 YT_STUDIO_SKIP_VANTAGE=1 \
   python cli.py run --topic "Demo" --dry-run-publish
 ```
 
+## Agent video surface (`/create-video`, `/create-short`)
+
+User-facing walkthrough: `docs/GUIDE.md` (install → channel → voice → make → publish).
+
+Visuals come from **HyperFrames**, not the legacy `storyboard`/`scenegen`/`video_assembler` stages
+(those remain only for the API-key `cli.py run --topic` path). Flow: agent writes `outline.json` →
+`cli.py import-outline` → `--only voice` → agent writes `video-plan.md` + HyperFrames project in
+`projects/<id>/composition/` → `--only hyperframes` (check + render + poster bake) →
+`--from-stage transcriber`. Rules live in `skills/create-video/references/`; compositions are
+written on the shared scene kit `skills/create-video/assets/scenekit.py` (focus stack, notes,
+captions, title card/outro). Branding is read from `config.yaml` → `channel:` (`ChannelSettings`
+in `core/config.py`) — never hardcode a channel. Shorts: `skills/create-video/assets/build_shorts.py`. `hyperframes` is an
+opt-in stage (not in `pipeline.stages`); `--only` keeps registry order for such stages. Needs
+Node 22+; `YT_STUDIO_HF_QUALITY=draft|standard|high`.
+
+### Narration quality and sync
+
+- Chatterbox conditions on only the first ~10s of the reference, so `cli.py voice-prompt --voice <id>`
+  writes a curated `prompt.wav` (preferred by `VoiceProfile.resolve_reference`) plus audition clips.
+- The Chatterbox engine generates per sentence (fixed seeds, `YT_STUDIO_VOICE_SEED`), verifies each
+  with Whisper and retakes (`YT_STUDIO_VOICE_TRIES`, `YT_STUDIO_VOICE_VERIFY=0` to skip), then masters
+  to -16 LUFS. Narration ASR uses Whisper `medium` (`YT_STUDIO_VOICE_ASR_MODEL`) — `base` mishears
+  accented speech/jargon and causes false retakes.
+- Chatterbox runs on CPU by default: MPS starts faster but collapses to 1-3 s/step after ~100 steps
+  (a 3-min script took 12h). `YT_STUDIO_VOICE_DEVICE=mps` to opt in. Finished slides are reused
+  via `audio/slide_XX.key` (engine + voice + prompt hash + text), so edits regenerate only changed slides.
+- `cli.py voice-check` prints script vs what Whisper heard per slide (a flipped word like
+  "can't" -> "can" can still score 0.9; reword — identical text reproduces the same take).
+  `cli.py voice-import --dir` uses narration the user recorded themselves instead of a clone.
+  `cli.py pace --gap` inserts silence at sentence breaks (idempotent; originals in `audio/unpaced/`).
+- The voice stage also writes `audio/words.json` (script words with timings). `cli.py cues --project <id>`
+  resolves `anchors.json` (beat → spoken phrase) to `cues.json`; compositions embed those times.
+
 ## Gotchas an agent would otherwise hit
 
 - **No CI, no pre-commit, no lint-clean baseline.** `ruff check .` currently reports ~84 findings
   (mostly `UP007`, `I001`, `E501`, and 15× `B008` from typer `Option(...)` defaults in `cli.py`).
   `B008` is a typer false positive — do not "fix" it. Scope lint fixes to files you touch.
 - **No venv / deps installed in this checkout.** `requirements.txt` only mirrors `pyproject.toml`;
-  extras `voice`/`transcribe` in `pyproject.toml` are intentionally empty (chatterbox-tts, whisperx
-  must be pip-installed manually).
+  extra `voice` installs Chatterbox (`uv pip install --python .venv/bin/python -e ".[voice]"`; the
+  venv is uv-made and has no `pip`); `transcribe` is intentionally empty (whisperx manual).
 - **`web_ui/api` and `web_ui/frontend` are empty directories.** `python cli.py serve` imports
   `web_ui.api.main:app` and will fail; `fastapi` is not a base dependency. README overstates this.
 - **Code defaults ≠ `config.yaml.example`** for `transcription`: `core/config.py` defaults to
@@ -49,8 +82,9 @@ YT_STUDIO_STUB_VOICE=1 YT_STUDIO_STUB_TRANSCRIBE=1 YT_STUDIO_SKIP_VANTAGE=1 \
 - Env switches are scattered across modules; grep `os.getenv("YT_STUDIO_` before adding a new one.
   README's env table is incomplete (e.g. `YT_STUDIO_FORCE_STUB`, `YT_STUDIO_KEEP_EXTRACT`,
   `YT_STUDIO_FAST_TRANSCRIBE` exist in code but not in the README).
-- `projects/`, `.env`, `.credentials/`, `modules/voice/voices/*/` are gitignored; the local
-  `mohit` voice profile and `recordings/mohit/*.m4a` are untracked. Never commit them.
+- `projects/`, `config.yaml`, `.env`, `.credentials/`, `recordings/`, `modules/voice/voices/*/`
+  and all media files are gitignored — local voice profiles, recordings and renders are personal.
+  Never commit them.
 
 ## Architecture
 

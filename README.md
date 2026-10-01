@@ -1,5 +1,11 @@
 # yt-studio
 
+> **Start here → [docs/GUIDE.md](docs/GUIDE.md).** It shows how to make technical explainers
+> and Shorts in **your own voice** (cloned, or recorded yourself) with an AI coding agent:
+> `/create-video <topic> 8 min`, `/create-short <topic> 45s`. It produces the minimal diagram
+> animation timed to the spoken word, captions, intro/outro, Shorts cut from each video, and
+> a post-ready publish kit. Fully local, no paid API.
+
 Local-first YouTube creation pipeline. Turn a topic (or source document) into:
 
 **script -> branded slides -> narrated video -> transcript -> chapters -> SEO metadata -> Shorts -> optional YouTube upload**
@@ -190,6 +196,14 @@ pytest
 | `python cli.py run ... --dry-run-publish` | Never call YouTube API |
 | `python cli.py batch topics.txt` | Sequential multi-topic queue |
 | `python cli.py list` / `status` / `stages` | Inspection |
+| `python cli.py import-outline outline.json --topic … --voice <id>` | Create a project from an agent- or hand-written script |
+| `python cli.py prepare-voice --voice <id> --audio a.m4a --consent` | Build a voice-clone profile from your recordings |
+| `python cli.py voice-prompt --voice <id> [--start s]` | Pick the ~10 s clip the clone conditions on (+ audition clips) |
+| `python cli.py voice-import --project <id> --dir <folder>` | Use narration you recorded yourself (one file per slide) |
+| `python cli.py voice-check --project <id>` | Script vs what was heard, per slide (catch flipped words) |
+| `python cli.py pace --project <id> --gap 0.45` | Add breathing room between sentences (no re-synthesis) |
+| `python cli.py cues --project <id>` | Resolve word-anchored animation beats to exact times |
+| `python cli.py run --project <id> --only hyperframes` | Check + render the HyperFrames composition + bake the poster |
 | `python cli.py serve` | FastAPI dashboard backend |
 
 ---
@@ -212,11 +226,15 @@ Orchestration: `core/pipeline.py`. Completed stages in `state.json` are skipped 
 
 ## Agent-Native Skills (Surface B)
 
-Anyone running inside Claude Code, OpenCode, or any agent-skill-compatible tool can build videos without an Anthropic API key by invoking the skills:
-- `/create-video "topic"` — runs long-form CoreDumpped/3B1B-style animated video creation.
-- `/create-short "topic"` — runs punchy 30-60s Short/Reel creation.
+Anyone running inside Claude Code, OpenCode, Codex or any agent-skill-compatible tool can build
+videos without an API key. The agent is the writer and motion designer:
 
-Both interfaces share the identical design tokens, storyboard schema, and component library.
+- `/create-video <topic> <length>`: a long-form explainer, its Shorts and a publish kit
+- `/create-short <topic> <length>`: a vertical Short and its publish kit
+
+Visuals are HyperFrames compositions built on the shared scene kit
+(`skills/create-video/assets/scenekit.py`); the rules live in `skills/create-video/references/`.
+Branding comes from `config.yaml` → `channel:`. Full walkthrough: [docs/GUIDE.md](docs/GUIDE.md).
 
 ---
 
