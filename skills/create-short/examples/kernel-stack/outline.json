@@ -1,0 +1,54 @@
+{
+  "title": "How Linux Remembers Its Kernel Stack Pointer (And Why You Should Care)",
+  "target_duration_minutes": 1.0,
+  "audience": "Programmers curious about what happens inside a system call",
+  "slides": [
+    {
+      "index": 1,
+      "title": "Whose stack?",
+      "bullets": [],
+      "speaker_notes": "Every system call enters the kernel with your stack pointer. The kernel refuses to use it. So where does its own stack come from?",
+      "visual_hint": "",
+      "visual_beat": "rsp register card pointing at the user stack; syscall arrow down into kernel mode; the user stack turns red; a dashed kernel stack with a question mark."
+    },
+    {
+      "index": 2,
+      "title": "The entry code",
+      "bullets": [],
+      "speaker_notes": "The entry code swaps G-S, stashes your stack pointer in a per-CPU slot, and loads the kernel's from another per-CPU variable: current top of stack.",
+      "visual_hint": "",
+      "visual_beat": "Real entry_SYSCALL_64 lines highlight in order; then the per-CPU area card: scratch slot receives user rsp, cpu_current_top_of_stack feeds rsp."
+    },
+    {
+      "index": 3,
+      "title": "Context switch",
+      "bullets": [],
+      "speaker_notes": "Every context switch rewrites that variable for the next thread, so it always points at the right kernel stack.",
+      "visual_hint": "",
+      "visual_beat": "Per-CPU slot points at thread A's kernel stack; the real __switch_to line appears; the pointer swings to thread B's stack."
+    },
+    {
+      "index": 4,
+      "title": "Why care",
+      "bullets": [],
+      "speaker_notes": "Why care? That stack is only sixteen kilobytes per thread. No deep recursion. No big local arrays. Overflow it, and a guard page catches it instead of silently corrupting memory.",
+      "visual_hint": "",
+      "visual_beat": "A 16 KiB stack bar fills with frames; frames overflow into a guard page that turns red and stops them."
+    }
+  ],
+  "chapter_skeleton": [
+    {
+      "title": "Whose stack?",
+      "approx_minute": 0.0
+    },
+    {
+      "title": "Context switch",
+      "approx_minute": 1.0
+    },
+    {
+      "title": "Why care",
+      "approx_minute": 2.0
+    }
+  ],
+  "_stub": false
+}

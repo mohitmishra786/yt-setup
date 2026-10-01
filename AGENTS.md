@@ -38,7 +38,9 @@ Visuals come from **HyperFrames**, not the legacy `storyboard`/`scenegen`/`video
 `projects/<id>/composition/` → `--only hyperframes` (check + render + poster bake) →
 `--from-stage transcriber`. Rules live in `skills/create-video/references/`; compositions are
 written on the shared scene kit `skills/create-video/assets/scenekit.py` (focus stack, notes,
-captions, title card/outro). Branding is read from `config.yaml` → `channel:` (`ChannelSettings`
+captions, title card/outro). `/create-short` has its own `references/` (vertical laws, script,
+compose, publish), `templates/build.py`, `scripts/scaffold.py` + `scripts/verify_short.py`, and a
+worked example in `examples/kernel-stack/` (kept byte-identical to a shipped Short). Branding is read from `config.yaml` → `channel:` (`ChannelSettings`
 in `core/config.py`) — never hardcode a channel. Shorts: `skills/create-video/assets/build_shorts.py`. `hyperframes` is an
 opt-in stage (not in `pipeline.stages`); `--only` keeps registry order for such stages. Needs
 Node 22+; `YT_STUDIO_HF_QUALITY=draft|standard|high`.

@@ -1,0 +1,94 @@
+{
+ "cues": [
+  {
+   "id": "s1_frees",
+   "slide": 1,
+   "at": "frees memory"
+  },
+  {
+   "id": "s1_reads",
+   "slide": 1,
+   "at": "reads it anyway"
+  },
+  {
+   "id": "s1_compiles",
+   "slide": 1,
+   "at": "It compiles"
+  },
+  {
+   "id": "s1_garbage",
+   "slide": 1,
+   "at": "prints garbage"
+  },
+  {
+   "id": "s2_addr",
+   "slide": 2,
+   "at": "old address"
+  },
+  {
+   "id": "s2_handed",
+   "slide": 2,
+   "at": "handed back"
+  },
+  {
+   "id": "s2_arrow",
+   "slide": 2,
+   "at": "following the arrow"
+  },
+  {
+   "id": "s2_uaf",
+   "slide": 2,
+   "at": "use after free"
+  },
+  {
+   "id": "s2_gcc",
+   "slide": 2,
+   "at": "can warn"
+  },
+  {
+   "id": "s2_builds",
+   "slide": 2,
+   "at": "still builds"
+  },
+  {
+   "id": "s3_borrows",
+   "slide": 3,
+   "at": "borrows the data"
+  },
+  {
+   "id": "s3_drop",
+   "slide": 3,
+   "at": "drop the owner"
+  },
+  {
+   "id": "s3_inuse",
+   "slide": 3,
+   "at": "still in use"
+  },
+  {
+   "id": "s3_refuses",
+   "slide": 3,
+   "at": "refuses to build it"
+  },
+  {
+   "id": "s3_msg",
+   "slide": 3,
+   "at": "cannot move out of data"
+  },
+  {
+   "id": "s4_c",
+   "slide": 4,
+   "at": "C lets it reach runtime"
+  },
+  {
+   "id": "s4_rust",
+   "slide": 4,
+   "at": "Rust stops it"
+  },
+  {
+   "id": "s4_exists",
+   "slide": 4,
+   "at": "ever runs"
+  }
+ ]
+}
