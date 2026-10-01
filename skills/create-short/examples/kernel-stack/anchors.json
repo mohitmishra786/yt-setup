@@ -1,0 +1,74 @@
+{
+ "cues": [
+  {
+   "id": "s1_enter",
+   "slide": 1,
+   "at": "enters the kernel"
+  },
+  {
+   "id": "s1_trust",
+   "slide": 1,
+   "at": "refuses to use it"
+  },
+  {
+   "id": "s1_where",
+   "slide": 1,
+   "at": "where does its own stack"
+  },
+  {
+   "id": "s2_swap",
+   "slide": 2,
+   "at": "swaps G-S"
+  },
+  {
+   "id": "s2_stash",
+   "slide": 2,
+   "at": "stashes your stack pointer"
+  },
+  {
+   "id": "s2_load",
+   "slide": 2,
+   "at": "loads the kernel's"
+  },
+  {
+   "id": "s3_switch",
+   "slide": 3,
+   "at": "context switch rewrites"
+  },
+  {
+   "id": "s3_next",
+   "slide": 3,
+   "at": "for the next thread"
+  },
+  {
+   "id": "s3_right",
+   "slide": 3,
+   "at": "right kernel stack"
+  },
+  {
+   "id": "s4_16",
+   "slide": 4,
+   "at": "sixteen kilobytes"
+  },
+  {
+   "id": "s4_recursion",
+   "slide": 4,
+   "at": "No deep recursion"
+  },
+  {
+   "id": "s4_arrays",
+   "slide": 4,
+   "at": "No big local arrays"
+  },
+  {
+   "id": "s4_overflow",
+   "slide": 4,
+   "at": "Overflow it"
+  },
+  {
+   "id": "s4_guard",
+   "slide": 4,
+   "at": "guard page catches it"
+  }
+ ]
+}

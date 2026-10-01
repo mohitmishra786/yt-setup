@@ -183,6 +183,16 @@ The same pipeline, one command at a time. You write the JSON and the composition
 .venv/bin/python skills/create-video/assets/build_shorts.py projects/<id>   # needs shorts.json
 ```
 
+For a **standalone Short**, the `create-short` skill has its own tools:
+
+```bash
+.venv/bin/python skills/create-short/scripts/scaffold.py projects/<id>       # init + template build.py
+.venv/bin/python skills/create-short/scripts/verify_short.py projects/<id>   # final gate + contact sheet
+```
+
+It also includes vertical layout rules (`references/shorts-laws.md`), a scripting guide, and
+a complete worked example (`examples/kernel-stack/`) to copy from.
+
 Formats and rules live in `skills/create-video/references/`: `plan.md` (outline and anchors),
 `compose.md` (scene kit), `deliver.md`, `publish.md`, `creative-laws.md` (the look),
 `long-form.md` (chapter structure).
