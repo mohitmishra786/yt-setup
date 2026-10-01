@@ -64,8 +64,15 @@ class VoiceProfile:
             encoding="utf-8",
         )
 
+    @property
+    def prompt_wav(self) -> Path:
+        """Curated ~10s prompt clip (see modules/voice/reference.py); preferred when present."""
+        return self.root / "prompt.wav"
+
     def resolve_reference(self) -> Path:
         """Best single reference file for zero-shot engines (Chatterbox)."""
+        if self.prompt_wav.exists() and self.prompt_wav.stat().st_size > 1000:
+            return self.prompt_wav
         if self.reference_wav.exists() and self.reference_wav.stat().st_size > 1000:
             return self.reference_wav
         candidates: list[Path] = []
@@ -331,7 +338,9 @@ def validate_profile_for_cloning(profile: VoiceProfile) -> list[str]:
     except FileNotFoundError as exc:
         return [str(exc)]
     dur = probe_duration_seconds(ref)
-    if dur < 5:
+    if ref == profile.prompt_wav:
+        pass  # curated ~10s prompt is intentional: Chatterbox conditions on ~10s anyway
+    elif dur < 5:
         warnings.append(f"Reference only {dur:.1f}s — expect robotic/unstable clone.")
     elif dur < 15:
         warnings.append(

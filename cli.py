@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 from typing import Optional
 
@@ -413,6 +414,193 @@ def prepare_voice_cmd(
         f"Use with: python cli.py run --pptx deck.pptx --voice {voice}"
     )
     console.print("Install clone engine if needed: pip install chatterbox-tts")
+
+
+@app.command("voice-prompt")
+def voice_prompt_cmd(
+    voice: str = typer.Option(..., "--voice", "-v", help="Voice id, e.g. mohit"),
+    source: Optional[Path] = typer.Option(
+        None, "--source", help="Recording to cut from (default: the profile's original recordings)."
+    ),
+    start: Optional[float] = typer.Option(
+        None, "--start", help="Use this start second instead of the auto-picked best window."
+    ),
+    candidates: int = typer.Option(3, "--candidates", help="Also write N audition clips."),
+) -> None:
+    """
+    Build prompt.wav — the ~10s clip Chatterbox actually conditions on.
+
+    Auto-picks the cleanest continuous-speech window from your original recordings and writes
+    audition clips to <profile>/prompt_candidates/ so you can listen and override with --start.
+    """
+    ensure_utf8_stdio()
+    setup_logging("INFO")
+    from modules.voice.profile import get_profile
+    from modules.voice.reference import best_candidates, cut_clean
+
+    profile = get_profile(voice)
+    if source is not None:
+        sources = [source]
+    else:
+        root = load_config().repo_root
+        sources = [root / s for s in profile.load_meta().get("created_from", [])]
+        sources = [s for s in sources if s.exists()] or [profile.reference_wav]
+    missing = [str(s) for s in sources if not s.exists()]
+    if missing:
+        console.print(f"[red]Audio not found:[/red] {missing}")
+        raise typer.Exit(code=2)
+
+    if start is not None:
+        chosen_src, chosen_start = sources[0], start
+    else:
+        picks = best_candidates(sources, top=max(1, candidates))
+        if not picks:
+            console.print("[red]No usable speech window found.[/red]")
+            raise typer.Exit(code=1)
+        cand_dir = profile.root / "prompt_candidates"
+        if cand_dir.exists():
+            shutil.rmtree(cand_dir)
+        for i, c in enumerate(picks, start=1):
+            clip = cut_clean(c.source, c.start, cand_dir / f"cand_{i}_{c.source.stem}_{c.start:.1f}s.wav")
+            console.print(
+                f"  cand {i}: {c.source.name} @ {c.start:.1f}s  speech={c.speech_ratio:.0%} "
+                f"longest_pause={c.longest_pause:.2f}s -> {clip.name}"
+            )
+        chosen_src, chosen_start = picks[0].source, picks[0].start
+
+    cut_clean(chosen_src, chosen_start, profile.prompt_wav)
+    meta = profile.load_meta()
+    meta["prompt"] = {"source": str(chosen_src), "start": round(chosen_start, 3), "seconds": 10.0}
+    profile.save_meta(meta)
+    console.print(f"[green]prompt.wav[/green] <- {chosen_src.name} @ {chosen_start:.1f}s ({profile.prompt_wav})")
+
+
+@app.command("voice-import")
+def voice_import_cmd(
+    project_id: str = typer.Option(..., "--project", "-p"),
+    folder: Path = typer.Option(
+        ..., "--dir", "-d", help="Folder with one recording per slide (slide_01.wav, …)."
+    ),
+    keep_silence: bool = typer.Option(
+        False, "--keep-silence", help="Don't trim leading/trailing room tone."
+    ),
+    config: Optional[Path] = typer.Option(None, "--config", "-c"),
+) -> None:
+    """Use narration you recorded yourself (no voice cloning): master it and time every word."""
+    from modules.voice.importer import import_narration
+
+    ensure_utf8_stdio()
+    setup_logging("INFO")
+    cfg = load_config(config)
+    proj = Project.load(cfg, project_id)
+    if not folder.is_dir():
+        console.print(f"[red]Not a folder:[/red] {folder}")
+        raise typer.Exit(code=2)
+    try:
+        info = import_narration(proj, folder, trim_silence=not keep_silence)
+    except (FileNotFoundError, ValueError, RuntimeError) as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+    console.print(
+        f"[green]imported[/green] {info['slides']} recording(s), {info['total']}s total. "
+        f"Next: cli.py voice-check / pace / cues --project {project_id}"
+    )
+
+
+@app.command("voice-check")
+def voice_check_cmd(
+    project_id: str = typer.Option(..., "--project", "-p"),
+    config: Optional[Path] = typer.Option(None, "--config", "-c"),
+) -> None:
+    """Transcribe each narration slide and show it next to the script (catch 'can't' -> 'can')."""
+    import json
+
+    from modules.voice.words import asr_words, similarity
+
+    ensure_utf8_stdio()
+    cfg = load_config(config)
+    proj = Project.load(cfg, project_id)
+    outline = json.loads(proj.paths.outline.read_text(encoding="utf-8"))
+    worst = 1.0
+    for slide in outline.get("slides") or []:
+        idx = int(slide["index"])
+        audio = proj.paths.audio_for_slide(idx)
+        if not audio.exists():
+            console.print(f"[red]slide {idx}: missing {audio.name}[/red]")
+            continue
+        heard = asr_words(audio)
+        score = similarity(str(slide["speaker_notes"]), heard)
+        worst = min(worst, score)
+        colour = "green" if score >= 0.9 else "yellow" if score >= 0.8 else "red"
+        console.print(f"[{colour}]slide {idx:02d}  match {score:.2f}[/{colour}]")
+        console.print(f"  script: {slide['speaker_notes']}")
+        console.print(f"  heard:  {' '.join(w['text'] for w in heard)}")
+    console.print(
+        "Read every line: a single flipped word (can't -> can, program -> problem) changes the "
+        "meaning even at a high score. Reword the sentence and re-run --only voice to fix it."
+    )
+    if worst < 0.8:
+        raise typer.Exit(code=1)
+
+
+@app.command("cues")
+def cues_cmd(
+    project_id: str = typer.Option(..., "--project", "-p"),
+    anchors: Optional[Path] = typer.Option(None, "--anchors", help="Default: projects/<id>/anchors.json"),
+    out: Optional[Path] = typer.Option(
+        None, "--out", help="Default: projects/<id>/cues.json"
+    ),
+    config: Optional[Path] = typer.Option(None, "--config", "-c"),
+) -> None:
+    """Resolve word-anchored cues (anchors.json) to exact times using audio/words.json."""
+    import json
+
+    from modules.voice.cues import CueError, resolve_cues
+
+    ensure_utf8_stdio()
+    cfg = load_config(config)
+    proj = Project.load(cfg, project_id)
+    anchors_path = anchors or proj.paths.root / "anchors.json"
+    words_path = proj.paths.audio_dir / "words.json"
+    for need in (anchors_path, words_path):
+        if not need.exists():
+            console.print(f"[red]Missing[/red] {need}")
+            raise typer.Exit(code=2)
+    try:
+        cues = resolve_cues(
+            json.loads(anchors_path.read_text(encoding="utf-8")),
+            json.loads(words_path.read_text(encoding="utf-8")),
+        )
+    except CueError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+    dest = out or proj.paths.root / "cues.json"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(json.dumps(cues, indent=2) + "\n", encoding="utf-8")
+    for cid, c in cues.items():
+        console.print(f"  {cid:<24} slide {c['slide']:>2}  t={c['t']:>7.3f}s  abs={c['abs']:>8.3f}s  ({c['at']})")
+    console.print(f"[green]{len(cues)} cue(s)[/green] -> {dest}")
+
+
+@app.command("pace")
+def pace_cmd(
+    project_id: str = typer.Option(..., "--project", "-p"),
+    gap: float = typer.Option(
+        0.45, "--gap", help="Extra silence (s) added at every sentence break."
+    ),
+    config: Optional[Path] = typer.Option(None, "--config", "-c"),
+) -> None:
+    """Slow narration down by adding pauses between sentences (no re-synthesis; re-run cues after)."""
+    from modules.voice.pacing import pace_project
+
+    ensure_utf8_stdio()
+    cfg = load_config(config)
+    proj = Project.load(cfg, project_id)
+    info = pace_project(proj, gap)
+    console.print(
+        f"[green]paced[/green] {info['slides']} slide(s), +{gap}s per sentence break, "
+        f"narration now {info['total']}s. Next: cli.py cues --project {project_id}"
+    )
 
 
 @app.command("batch")
