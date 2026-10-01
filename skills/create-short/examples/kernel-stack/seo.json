@@ -1,0 +1,5 @@
+{"title": "How Linux finds its kernel stack on every syscall #shorts",
+ "description": "entry_SYSCALL_64 swaps GS, stashes your stack pointer and loads cpu_current_top_of_stack; every context switch rewrites it. Real Linux 7.3 source.",
+ "tags": ["linux kernel", "kernel stack", "system call", "x86-64", "context switch", "operating systems", "kernelkafe"],
+ "hashtags": ["#linux", "#kernel", "#operatingsystems"], "category_hint": "Education",
+ "thumbnail_text": "WHERE IS THE KERNEL'S STACK?", "hook_line": "Every system call enters the kernel with your stack pointer."}

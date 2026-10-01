@@ -1,0 +1,54 @@
+{
+  "title": "Rust vs C: the same memory bug, caught at different times",
+  "target_duration_minutes": 1.0,
+  "audience": "Programmers curious about Rust's memory safety",
+  "slides": [
+    {
+      "index": 1,
+      "title": "It compiles",
+      "bullets": [],
+      "speaker_notes": "This C program frees memory, then reads it anyway. It compiles, runs, and prints garbage.",
+      "visual_hint": "",
+      "visual_beat": "C code types in; free(p) line highlights; terminal shows the build succeeding and the garbage number."
+    },
+    {
+      "index": 2,
+      "title": "Use after free",
+      "bullets": [],
+      "speaker_notes": "The pointer still holds the old address. The heap block was handed back, but nothing stops you from following the arrow. That's a use after free. G-C-C can warn about it, but it still builds.",
+      "visual_hint": "",
+      "visual_beat": "Pointer box p arrows into a heap block holding 42; block turns dashed (freed); arrow still followed; value becomes garbage; gcc -Wall warning line appears, then 'build ok'."
+    },
+    {
+      "index": 3,
+      "title": "Rust says no",
+      "bullets": [],
+      "speaker_notes": "Now the same bug in Rust. The reference borrows the data, then you drop the owner while the borrow is still in use. The compiler refuses to build it: cannot move out of data, because it is borrowed.",
+      "visual_hint": "",
+      "visual_beat": "Rust code; data owner box and view borrow arrow; drop(data) line highlights red; rustc error E0505 appears."
+    },
+    {
+      "index": 4,
+      "title": "Before it exists",
+      "bullets": [],
+      "speaker_notes": "Same mistake. C lets it reach runtime. Rust stops it before the code ever runs.",
+      "visual_hint": "",
+      "visual_beat": "Two columns: C -> runtime (red), Rust -> compile time (accent). Payoff frame."
+    }
+  ],
+  "chapter_skeleton": [
+    {
+      "title": "It compiles",
+      "approx_minute": 0.0
+    },
+    {
+      "title": "Rust says no",
+      "approx_minute": 1.0
+    },
+    {
+      "title": "Before it exists",
+      "approx_minute": 2.0
+    }
+  ],
+  "_stub": false
+}
