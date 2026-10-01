@@ -25,7 +25,7 @@ from modules.scenegen.qa import (
     check_sequential_reveals,
 )
 from modules.scenegen.renderer import render_scene_stub
-from modules.scenegen.tokens import DEFAULT_DESIGN_TOKENS, TOKENS
+from modules.scenegen.tokens import DEFAULT_DESIGN_TOKENS, TOKENS, DesignTokens
 
 
 def test_design_tokens_properties() -> None:
@@ -151,6 +151,56 @@ def test_build_scene_html() -> None:
     assert 'id="nic"' in html
     assert 'id="ring"' in html
     assert "window.seekTo" in html
+
+
+def test_build_scene_html_uses_configured_canvas_dimensions() -> None:
+    beat = StoryboardBeat(
+        id="scene_vertical",
+        index=1,
+        title="Vertical Canvas",
+        narration_text="Portrait scenes use the configured canvas dimensions.",
+        duration_estimate=5.0,
+        elements=[
+            VisualElement(
+                id="success_node",
+                type="box",
+                label="Compile-time check",
+                style={"accent": "accent_success", "state": "success"},
+            )
+        ],
+    )
+
+    html = build_scene_html(beat, DesignTokens(width=1080, height=1920))
+
+    assert 'content="width=1080, height=1920, initial-scale=1.0"' in html
+    assert "--scene-width: 1080px;" in html
+    assert "--scene-height: 1920px;" in html
+    assert "--box-accent: var(--accent-success)" in html
+    assert "state-success" in html
+
+
+def test_build_scene_html_connects_arrows_at_element_edges() -> None:
+    beat = StoryboardBeat(
+        id="scene_flow",
+        index=1,
+        title="Rectangular Flow",
+        narration_text="Arrows meet the edges of their nodes.",
+        duration_estimate=5.0,
+        elements=[
+            VisualElement(id="source", type="box", x=100, y=100, width=400, height=100),
+            VisualElement(id="target", type="box", x=600, y=300, width=200, height=100),
+            VisualElement(
+                id="flow",
+                type="arrow",
+                from_id="source",
+                to_id="target",
+            ),
+        ],
+    )
+
+    html = build_scene_html(beat)
+
+    assert 'd="M 400.0 200.0 L 600.0 300.0"' in html
 
 
 def test_visual_qa_sequential_reveals_heuristic() -> None:

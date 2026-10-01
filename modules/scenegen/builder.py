@@ -42,6 +42,18 @@ def _resolve_element_coords(
     return coords
 
 
+def _rect_edge_point(
+    source: dict[str, float], target: dict[str, float]
+) -> tuple[float, float]:
+    """Find where the center-to-center ray exits a rectangular element."""
+    dx = target["cx"] - source["cx"]
+    dy = target["cy"] - source["cy"]
+    scale_x = source["w"] / (2 * abs(dx)) if dx else float("inf")
+    scale_y = source["h"] / (2 * abs(dy)) if dy else float("inf")
+    scale = min(scale_x, scale_y)
+    return source["cx"] + dx * scale, source["cy"] + dy * scale
+
+
 def build_scene_html(
     beat: StoryboardBeat,
     tokens: DesignTokens | None = None,
@@ -71,6 +83,9 @@ def build_scene_html(
     for el in beat.elements:
         el_type = (el.type or "box").lower()
         init_hidden = el.initial_state != "visible"
+        element_accent = (
+            f"var(--{str(el.style.get('accent', beat.live_accent)).replace('_', '-')})"
+        )
 
         if el_type == "box":
             elements_html.append(
@@ -81,7 +96,8 @@ def build_scene_html(
                     y=el.y,
                     width=el.width or 280,
                     height=el.height or 140,
-                    accent=accent_var,
+                    state=str(el.style.get("state", "idle")),
+                    accent=element_accent,
                     initial_hidden=init_hidden,
                 )
             )
@@ -90,21 +106,8 @@ def build_scene_html(
             if el.from_id and el.from_id in coords and el.to_id and el.to_id in coords:
                 src = coords[el.from_id]
                 dst = coords[el.to_id]
-                if dst["cx"] > src["cx"] + src["w"] / 2:
-                    x1 = src["x"] + src["w"]
-                    y1 = src["cy"]
-                    x2 = dst["x"]
-                    y2 = dst["cy"]
-                elif src["cx"] > dst["cx"] + dst["w"] / 2:
-                    x1 = src["x"]
-                    y1 = src["cy"]
-                    x2 = dst["x"] + dst["w"]
-                    y2 = dst["cy"]
-                else:
-                    x1 = src["cx"]
-                    y1 = src["y"] + src["h"]
-                    x2 = dst["cx"]
-                    y2 = dst["y"]
+                x1, y1 = _rect_edge_point(src, dst)
+                x2, y2 = _rect_edge_point(dst, src)
             else:
                 x1 = el.x
                 y1 = el.y
@@ -119,7 +122,7 @@ def build_scene_html(
                     x2=x2,
                     y2=y2,
                     label=el.label,
-                    accent=accent_var,
+                    accent=element_accent,
                     initial_hidden=init_hidden,
                 )
             )
@@ -131,7 +134,7 @@ def build_scene_html(
                     y=el.y,
                     items=el.items,
                     label=el.label or "Buffer Queue",
-                    accent=accent_var,
+                    accent=element_accent,
                     initial_hidden=init_hidden,
                 )
             )
@@ -144,7 +147,7 @@ def build_scene_html(
                     width=el.width or 1200,
                     steps=el.items,
                     label=el.label or "Execution Pipeline",
-                    accent=accent_var,
+                    accent=element_accent,
                     initial_hidden=init_hidden,
                 )
             )
@@ -157,7 +160,7 @@ def build_scene_html(
                     y=el.y,
                     cells=cells,
                     label=el.label or "Memory Layout",
-                    accent=accent_var,
+                    accent=element_accent,
                     initial_hidden=init_hidden,
                 )
             )
@@ -169,7 +172,7 @@ def build_scene_html(
                     y=el.y,
                     states=el.items or None,
                     label=el.label or "State Transition",
-                    accent=accent_var,
+                    accent=element_accent,
                     initial_hidden=init_hidden,
                 )
             )
@@ -180,7 +183,7 @@ def build_scene_html(
                 f"width: {el.width or 400}px; z-index: 12;"
             )
             span_style = (
-                f"color: {accent_var}; font-family: var(--code-font-family); "
+                f"color: {element_accent}; font-family: var(--code-font-family); "
                 f"font-size: var(--font-size-label); font-weight: 600;"
             )
             elements_html.append(
@@ -393,7 +396,7 @@ def build_scene_html(
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=1920, height=1080, initial-scale=1.0">
+  <meta name="viewport" content="width={tok.width}, height={tok.height}, initial-scale=1.0">
   <title>{escape(beat.title or beat.id)}</title>
   <style>
 {css_vars}

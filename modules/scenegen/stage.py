@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+from dataclasses import replace
 from typing import Any
 
 from core.logging_setup import get_logger
@@ -37,6 +38,11 @@ class ScenegenStage:
         storyboard = Storyboard.model_validate(data)
 
         cfg = project.config
+        scene_tokens = replace(
+            TOKENS,
+            width=cfg.project.video_width,
+            height=cfg.project.video_height,
+        )
         scenes_dir = project.paths.root / "scenes"
         scenes_dir.mkdir(parents=True, exist_ok=True)
 
@@ -60,7 +66,7 @@ class ScenegenStage:
             mp4_path = scenes_dir / f"{scene_name}.mp4"
 
             # Generate HTML scene with design tokens
-            save_scene_html(beat, html_path, TOKENS)
+            save_scene_html(beat, html_path, scene_tokens)
             artifacts.append(project.rel(html_path))
 
             # Duration: prefer matching existing audio duration if available,
@@ -103,7 +109,7 @@ class ScenegenStage:
         qa_results = validate_storyboard_qa(
             storyboard,
             scenes_dir=scenes_dir,
-            tokens=TOKENS,
+            tokens=scene_tokens,
             raise_on_failure=strict_qa,
         )
 
