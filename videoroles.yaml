@@ -6,19 +6,19 @@ version: 1
 roles:
   director:
     primary: anthropic/claude-opus-4-8
-    notes: "Taste-bearing visual director — plans storyboard.json from outline.json with CoreDumpped/3B1B diagram choreography and pacing holds."
+    notes: "Taste-bearing visual director — writes video-plan.md (hook, storyboard, word-anchored reveals, holds) from outline.json + narration durations, per skills/create-video/references/creative-laws.md and plan.md."
 
   scene-coder:
     primary: anthropic/claude-sonnet-4-6
-    notes: "Scene Coder — generates individual scene render files (HTML/CSS/JS) strictly obeying modules/scenegen/tokens.py and component library."
+    notes: "Scene Coder — builds one HyperFrames sub-composition per scene from video-plan.md and composition-brief.md, using the HyperFrames skills and registry."
 
   visual-reviewer:
     primary: anthropic/claude-sonnet-4-6
-    notes: "Visual Reviewer — inspects still frames and executes automated visual-QA checks against design tokens, word pacing, and sequential reveals; requests targeted re-renders."
+    notes: "Visual Reviewer — runs `npx hyperframes check --snapshots`, inspects stills and contact sheets against creative-laws.md, and requests targeted scene fixes."
 
   narrator-sync:
     primary: anthropic/claude-haiku-4-5
-    notes: "Narrator Sync — aligns audio narration durations to storyboard beat timing so animation holds match spoken words."
+    notes: "Narrator Sync — anchors scene lengths and reveals to narration: durations.json for scene timing, word timestamps for reveal and caption timing."
 
 routing:
   mode: static

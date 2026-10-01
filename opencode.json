@@ -2,12 +2,12 @@
   "$schema": "https://opencode.ai/config.json",
   "command": {
     "create-short": {
-      "description": "Produce a punchy, 30-60 second technical Short/Reel with minimalist diagram motion",
-      "template": "Produce a 30-60 second technical Short/Reel following skills/create-short/SKILL.md on the topic: $ARGUMENTS"
+      "description": "Vertical technical Short/Reel with HyperFrames motion design (asks for length if not given)",
+      "template": "Follow skills/create-short/SKILL.md exactly. Request: $ARGUMENTS\nIf the request does not state a duration, ask for it before doing anything else."
     },
     "create-video": {
-      "description": "Produce an 8-15 minute long-form technical explainer video with minimalist diagram motion",
-      "template": "Produce an 8-15 minute long-form technical explainer video following skills/create-video/SKILL.md on the topic: $ARGUMENTS"
+      "description": "Long-form technical explainer with HyperFrames motion design (asks for length if not given)",
+      "template": "Follow skills/create-video/SKILL.md exactly. Request: $ARGUMENTS\nIf the request does not state a duration, ask for it before doing anything else."
     }
   },
   "skills": {

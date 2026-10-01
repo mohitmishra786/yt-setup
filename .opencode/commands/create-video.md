@@ -1,6 +1,6 @@
 ---
-description: Produce an 8-15 minute long-form technical explainer video with minimalist diagram motion
+description: Long-form technical explainer with HyperFrames motion design (asks for length if not given)
 ---
-Produce an authentic, 8–15 minute long-form technical/CS explainer video with animated diagrams and voice narration on: $ARGUMENTS
+Follow skills/create-video/SKILL.md exactly. Request: $ARGUMENTS
 
-Follow the exact instructions in skills/create-video/SKILL.md using the shared design tokens, storyboard schema, and components.
+If the request does not state a duration, ask for it before doing anything else.

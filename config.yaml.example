@@ -86,6 +86,17 @@ publisher:
   token_path: .credentials/youtube_token.json
   client_secrets_path: .credentials/client_secret.json
 
+channel:
+  # Branding for the agent-made videos (title card, outro, Shorts, publish kit).
+  name: YourChannel
+  wordmark: [Your, Channel]        # last part is drawn in the accent colour
+  handle: "@yourchannel"
+  url: https://www.youtube.com/@yourchannel
+  tagline: "Subscribe for more deep dives"
+  accent: "#5aa9f0"             # the ONE accent colour (soft blue); everything else is grey
+  timezone: UTC                # used for the posting schedule
+  post_time: "14:00"             # default publish slot in that timezone
+
 pipeline:
   stages:
     - scriptwriter

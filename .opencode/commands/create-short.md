@@ -1,6 +1,6 @@
 ---
-description: Produce a punchy, 30-60 second technical Short/Reel with minimalist diagram motion
+description: Vertical technical Short/Reel with HyperFrames motion design (asks for length if not given)
 ---
-Produce a high-impact, short-form technical Short/Reel (30–60 seconds) with animated diagrams and voice narration on: $ARGUMENTS
+Follow skills/create-short/SKILL.md exactly. Request: $ARGUMENTS
 
-Follow the exact instructions in skills/create-short/SKILL.md using the shared design tokens, storyboard schema, and components.
+If the request does not state a duration, ask for it before doing anything else.
