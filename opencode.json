@@ -1,5 +1,21 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "command": {
+    "create-short": {
+      "description": "Vertical technical Short/Reel with HyperFrames motion design (asks for length if not given)",
+      "template": "Follow skills/create-short/SKILL.md exactly. Request: $ARGUMENTS\nIf the request does not state a duration, ask for it before doing anything else."
+    },
+    "create-video": {
+      "description": "Long-form technical explainer with HyperFrames motion design (asks for length if not given)",
+      "template": "Follow skills/create-video/SKILL.md exactly. Request: $ARGUMENTS\nIf the request does not state a duration, ask for it before doing anything else."
+    }
+  },
+  "skills": {
+    "paths": [
+      "./skills",
+      "./.opencode/skills"
+    ]
+  },
   "agent": {
     "planner": {
       "mode": "primary",

@@ -13,6 +13,7 @@ class Slide(BaseModel):
     bullets: list[str] = Field(default_factory=list, max_length=8)
     speaker_notes: str = Field(min_length=1)
     visual_hint: str = ""
+    visual_beat: str = ""
 
     @field_validator("bullets")
     @classmethod
@@ -20,10 +21,86 @@ class Slide(BaseModel):
         cleaned = [b.strip() for b in v if b and str(b).strip()]
         return cleaned[:8]
 
-    @field_validator("title", "speaker_notes", "visual_hint")
+    @field_validator("title", "speaker_notes", "visual_hint", "visual_beat")
     @classmethod
     def strip_text(cls, v: str) -> str:
         return v.strip()
+
+
+class VisualAction(BaseModel):
+    """An individual animation step on a visual element."""
+
+    action: str = Field(description="enter, exit, move, highlight, draw, update, fade_in, fade_out")
+    target_id: str = Field(description="ID of the visual element to animate")
+    start_time: float = Field(
+        default=0.0, ge=0.0, description="Offset in seconds from start of beat"
+    )
+    duration: float = Field(default=0.5, ge=0.0, description="Duration in seconds of the animation")
+    params: dict[str, Any] = Field(default_factory=dict, description="Action-specific parameters")
+
+
+class VisualElement(BaseModel):
+    """A diagram primitive on the canvas (box, arrow, queue, grid, timeline, etc.)."""
+
+    id: str = Field(description="Unique ID of the element within this beat")
+    type: str = Field(description="box, arrow, label, queue, grid, timeline, group, container")
+    label: str = Field(default="", description="Text label or header")
+    x: float = Field(default=0.0, description="X position (pixels or percentage)")
+    y: float = Field(default=0.0, description="Y position (pixels or percentage)")
+    width: float = Field(default=0.0, description="Element width")
+    height: float = Field(default=0.0, description="Element height")
+    style: dict[str, Any] = Field(default_factory=dict, description="Optional style overrides")
+    from_id: str | None = Field(default=None, description="Source element ID for arrows/connectors")
+    to_id: str | None = Field(default=None, description="Target element ID for arrows/connectors")
+    items: list[str] = Field(
+        default_factory=list, description="Ordered items for queue/stack/grid cells"
+    )
+    initial_state: str = Field(default="hidden", description="hidden or visible at beat start")
+
+
+class StoryboardBeat(BaseModel):
+    """One storyboard beat/scene corresponding to a narrative reveal and narration block."""
+
+    id: str = Field(description="Unique beat ID (e.g. scene_01, beat_01)")
+    index: int = Field(ge=1, description="1-based sequence index")
+    title: str = Field(default="", description="Beat title / mental model concept")
+    narration_text: str = Field(min_length=1, description="Spoken narration script (speaker notes)")
+    duration_estimate: float = Field(
+        default=10.0, ge=1.0, description="Estimated duration in seconds"
+    )
+    live_accent: str = Field(
+        default="accent_primary", description="Which accent token is currently active"
+    )
+    visual_beat: str = Field(default="", description="What is visually happening on screen")
+    elements: list[VisualElement] = Field(
+        default_factory=list, description="Visual primitives in this scene"
+    )
+    actions: list[VisualAction] = Field(
+        default_factory=list, description="Choreographed animations"
+    )
+
+
+class Storyboard(BaseModel):
+    """Full video storyboard: ordered list of animated diagram beats."""
+
+    title: str = Field(min_length=1, max_length=300)
+    topic: str = ""
+    target_duration_minutes: float = Field(default=10.0, ge=1.0, le=120.0)
+    audience: str = "general technical audience"
+    beats: list[StoryboardBeat] = Field(min_length=1, max_length=50)
+    total_duration_estimate: float = 0.0
+    stub: bool = Field(default=False, alias="_stub")
+
+    model_config = {"populate_by_name": True, "extra": "ignore"}
+
+    @model_validator(mode="after")
+    def compute_totals_and_numbering(self) -> Storyboard:
+        for i, beat in enumerate(self.beats, start=1):
+            beat.index = i
+            if not beat.id:
+                beat.id = f"scene_{i:02d}"
+        self.total_duration_estimate = round(sum(b.duration_estimate for b in self.beats), 2)
+        return self
 
 
 class ChapterSkeletonItem(BaseModel):
@@ -160,6 +237,10 @@ class ChaptersDocument(BaseModel):
 
 def outline_from_dict(data: dict[str, Any]) -> SlideOutline:
     return SlideOutline.model_validate(data)
+
+
+def storyboard_from_dict(data: dict[str, Any]) -> Storyboard:
+    return Storyboard.model_validate(data)
 
 
 def seo_from_dict(data: dict[str, Any]) -> SEOMetadata:

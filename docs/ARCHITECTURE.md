@@ -14,9 +14,10 @@
 ```
 topic / source
     → outline.json + seo.json
-    → slides.pptx
-    → audio/slide_XX.mp3
-    → frames/slide_XX.png + final.mp4
+    → storyboard.json
+    → scenes/scene_XX.html + scene_XX.mp4 (Playwright + FFmpeg)
+    → audio/slide_XX.mp3 (Chatterbox / TTS)
+    → final.mp4 (scene concatenation + audio muxing)
     → transcript.json + .srt/.vtt
     → chapters.txt
     → shorts/* + publish_manifest.json

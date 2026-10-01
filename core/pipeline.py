@@ -138,6 +138,9 @@ class Pipeline:
         )
         return result
 
+    def _full_order(self, order: list[str]) -> list[str]:
+        return _insert_opt_in(order, list(self.stages))
+
     def _plan(
         self,
         *,
@@ -152,8 +155,10 @@ class Pipeline:
             unknown = [s for s in only if s not in known]
             if unknown:
                 raise ValueError(f"Unknown stage(s) in --only: {unknown}")
-            # Preserve global order for multi-stage only
-            return [s for s in order if s in only]
+            # Preserve global order for multi-stage only. Registered stages that are
+            # opt-in (absent from pipeline.stages, e.g. hyperframes) keep their
+            # registry position so `--only voice,hyperframes` runs in the right order.
+            return [s for s in self._full_order(order) if s in only]
 
         skip_set = set(skip or [])
         if from_stage:
@@ -165,6 +170,17 @@ class Pipeline:
             order = order[idx:]
 
         return [s for s in order if s not in skip_set]
+
+
+def _insert_opt_in(order: list[str], registry: list[str]) -> list[str]:
+    """Place registry stages missing from `order` right after their registry predecessor."""
+    full = list(order)
+    for i, name in enumerate(registry):
+        if name in full:
+            continue
+        prev = [r for r in registry[:i] if r in full]
+        full.insert(full.index(prev[-1]) + 1 if prev else 0, name)
+    return full
 
 
 def run_pipeline(

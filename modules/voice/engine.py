@@ -320,6 +320,55 @@ def probe_audio_duration(path: Path) -> float:
     return max(1.0, size / 16000.0)
 
 
+def narration_key(engine: str, voice_id: str, text: str) -> str:
+    """Fingerprint of a slide's narration; audio is reused only if none of its inputs changed."""
+    import hashlib
+
+    prompt = ""
+    if engine in {"chatterbox", "xtts"}:
+        from modules.voice.profile import get_profile
+
+        try:
+            ref = get_profile(voice_id).resolve_reference()
+            prompt = hashlib.sha256(ref.read_bytes()).hexdigest()
+        except Exception:  # noqa: BLE001
+            prompt = "no-reference"
+    knobs = "|".join(
+        os.getenv(k, "")
+        for k in ("YT_STUDIO_VOICE_SEED", "YT_STUDIO_VOICE_TRIES", "YT_STUDIO_VOICE_VERIFY")
+    )
+    return hashlib.sha256(f"{engine}|{voice_id}|{prompt}|{knobs}|{text}".encode()).hexdigest()
+
+
+def write_word_timings(
+    project: Project, slides: list[dict], durations: list[float], *, stub: bool = False
+) -> Path:
+    """audio/words.json — every script word with its start/end, per slide and absolute."""
+    from modules.voice.words import align, asr_words, estimate
+
+    estimate_only = stub or os.getenv("YT_STUDIO_STUB_TRANSCRIBE") == "1"
+    out: list[dict] = []
+    offset = 0.0
+    for slide, dur in zip(slides, durations, strict=True):
+        idx = int(slide.get("index") or (len(out) + 1))
+        text = str(slide.get("speaker_notes") or slide.get("title") or " ").strip()
+        audio = project.paths.audio_for_slide(idx)
+        words = estimate(text, dur) if estimate_only else align(text, asr_words(audio), dur)
+        out.append(
+            {
+                "index": idx,
+                "file": project.rel(audio),
+                "offset": round(offset, 3),
+                "duration": round(dur, 3),
+                "words": words,
+            }
+        )
+        offset += dur
+    path = project.paths.audio_dir / "words.json"
+    path.write_text(json.dumps({"slides": out}, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
 class VoiceStage:
     """Stage 3 — synthesize one audio file per slide from speaker_notes."""
 
@@ -404,10 +453,21 @@ class VoiceStage:
         )
 
         fail_hard = require_clone and engine.name in {"chatterbox", "xtts", "elevenlabs"}
+        reused = 0
         for slide in slides:
             idx = int(slide.get("index") or (len(artifacts) + 1))
             notes = str(slide.get("speaker_notes") or slide.get("title") or " ").strip()
             out = project.paths.audio_for_slide(idx)
+            key = narration_key(engine.name, voice_id, notes)
+            key_file = out.with_suffix(".key")
+            if out.exists() and key_file.exists() and key_file.read_text().strip() == key:
+                dur = probe_audio_duration(out)
+                durations.append(dur)
+                artifacts.append(project.rel(out))
+                reused += 1
+                log.info("audio slide_%02d reused (unchanged) duration=%.2fs", idx, dur)
+                continue
+            key_file.unlink(missing_ok=True)
             try:
                 engine.synthesize(notes, voice_id, out)
             except Exception as exc:  # noqa: BLE001
@@ -420,7 +480,12 @@ class VoiceStage:
             dur = probe_audio_duration(out)
             durations.append(dur)
             artifacts.append(project.rel(out))
+            if engine.name != "silence":
+                key_file.write_text(key + "\n")
             log.info("audio slide_%02d duration=%.2fs -> %s", idx, dur, out.name)
+
+        words_path = write_word_timings(project, slides, durations, stub=engine.name == "silence")
+        artifacts.append(project.rel(words_path))
 
         meta_path = project.paths.audio_dir / "durations.json"
         meta_path.write_text(
@@ -448,6 +513,7 @@ class VoiceStage:
                 "total_duration": round(sum(durations), 3),
                 "stub": engine.name == "silence",
                 "cloned": engine.name in {"chatterbox", "xtts", "elevenlabs"},
+                "reused": reused,
             },
             message=f"{len(slides)} clip(s) via {engine.name} ({sum(durations):.1f}s)",
         )

@@ -228,6 +228,7 @@ projects/*
 *.wav
 *.pptx
 !modules/slidebuilder/templates/**
+!tests/fixtures/*.pptx
 .DS_Store
 .ruff_cache/
 .mypy_cache/

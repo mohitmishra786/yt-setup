@@ -1,0 +1,130 @@
+/* House style — minimal, flat, near-monochrome technical diagrams.
+ * Copy into composition/assets/house.css and <link> it from every scene.
+ * One accent per video (--accent); --bad only for crashes / UB / rejected states.
+ * No gradients, glows, shadows, badges, or kicker labels. */
+
+:root {
+  --bg: #121417;
+  --surface: #1c1f24;
+  --surface-2: #252930;
+  --line: #3a3f48;
+  --ink: #e9eaec;
+  --ink-2: #9aa0a8;
+  --ink-3: #5d636c;
+  --accent: #5aa9f0;          /* override per video, e.g. #f2b84b */
+  --accent-fill: rgba(90, 169, 240, 0.12);
+  --bad: #e5645c;
+  --bad-fill: rgba(229, 100, 92, 0.12);
+
+  --font: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --stroke: 3px;
+  --radius: 10px;
+
+  /* type scale — portrait defaults; landscape overrides below */
+  --t-hero: 120px;
+  --t-body: 52px;
+  --t-label: 42px;
+  --t-small: 34px;
+  --t-code: 38px;
+  --t-caption: 64px;
+}
+
+[data-resolution="landscape"] {
+  --t-hero: 96px;
+  --t-body: 44px;
+  --t-label: 34px;
+  --t-small: 28px;
+  --t-code: 32px;
+  --t-caption: 48px;
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* A shape that represents a thing: a variable, a block, a thread, a page. */
+.box {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: var(--surface);
+  border: var(--stroke) solid var(--line);
+  border-radius: var(--radius);
+  font-size: var(--t-label);
+  font-weight: 600;
+  line-height: 1.15;
+}
+.box.is-live { border-color: var(--accent); background: var(--accent-fill); }
+.box.is-bad  { border-color: var(--bad);    background: var(--bad-fill); }
+.box.is-ghost { border-style: dashed; background: transparent; color: var(--ink-3); }
+
+/* Memory: a row/column of equal cells; addresses sit outside the cells. */
+.cells { position: absolute; display: flex; }
+.cells.vertical { flex-direction: column; }
+.cell {
+  width: 1em; height: 1em;               /* size the row with font-size */
+  border: var(--stroke) solid var(--line);
+  margin: 0 -1.5px;                       /* shared borders */
+  background: var(--surface);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono);
+  font-size: 0.42em;
+}
+.cell.is-used { background: var(--surface-2); }
+.cell.is-live { border-color: var(--accent); background: var(--accent-fill); position: relative; z-index: 1; }
+.cell.is-bad  { border-color: var(--bad);    background: var(--bad-fill);    position: relative; z-index: 1; }
+
+.label { position: absolute; font-size: var(--t-label); font-weight: 600; }
+.label.muted, .addr { color: var(--ink-2); }
+.addr { position: absolute; font-family: var(--mono); font-size: var(--t-small); }
+.hero { position: absolute; font-size: var(--t-hero); font-weight: 800; letter-spacing: -0.02em; line-height: 1.02; }
+
+/* Arrows: draw as SVG <path class="arrow"> with marker-end="url(#head)". */
+svg.wires { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.arrow { fill: none; stroke: var(--ink-2); stroke-width: var(--stroke); stroke-linecap: round; }
+.arrow.is-live { stroke: var(--accent); }
+.arrow.is-bad  { stroke: var(--bad); }
+
+/* Code: flat panel, no window chrome. Highlight the spoken line only. */
+.code {
+  position: absolute;
+  background: var(--surface);
+  border: var(--stroke) solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.6em 0.8em;
+  font-family: var(--mono);
+  font-size: var(--t-code);
+  line-height: 1.5;
+  white-space: pre;
+}
+.code .ln { display: block; padding: 0 0.3em; border-radius: 6px; }
+.code .ln.is-live { background: var(--accent-fill); }
+.code .ln.is-bad  { background: var(--bad-fill); }
+.code .ln.dim, .dim { opacity: 0.35; }
+.code .kw { color: var(--ink); font-weight: 700; }
+.code .cm { color: var(--ink-3); }
+
+/* Terminal output uses the same panel: <div class="code term"> */
+.term .err { color: var(--bad); }
+
+/* Captions (shorts): white, bold; spoken word full opacity, the rest softened. No color. */
+.caption {
+  position: absolute;
+  left: 90px; right: 140px; bottom: 420px;   /* inside vertical safe zones */
+  text-align: center;
+  font-size: var(--t-caption);
+  font-weight: 800;
+  line-height: 1.1;
+}
+.caption .w { opacity: 0.55; }
+.caption .w.is-on { opacity: 1; }
+[data-resolution="landscape"] .caption { left: 240px; right: 240px; bottom: 80px; }

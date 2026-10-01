@@ -25,6 +25,8 @@ class LLMSettings(BaseModel):
     model: str = "claude-sonnet-4-20250514"
     max_tokens: int = 8192
     temperature: float = 0.4
+    base_url: str | None = None
+    api_key: str | None = None
 
 
 class ElevenLabsSettings(BaseModel):
@@ -117,11 +119,27 @@ class PublisherSettings(BaseModel):
     client_secrets_path: Path = Path(".credentials/client_secret.json")
 
 
+class ChannelSettings(BaseModel):
+    """Branding + posting defaults used by the agent video skills (title card, outro, shorts,
+    publish kit). Read by skills/create-video/assets/scenekit.py straight from config.yaml."""
+
+    name: str = "YourChannel"
+    # Wordmark split: the last part is drawn in the accent colour ("Your" + "Channel").
+    wordmark: list[str] = Field(default_factory=lambda: ["Your", "Channel"])
+    handle: str = "@yourchannel"
+    url: str = ""
+    tagline: str = "Subscribe for more deep dives"
+    accent: str = "#5aa9f0"
+    timezone: str = "UTC"
+    post_time: str = "14:00"
+
+
 class PipelineSettings(BaseModel):
     stages: list[str] = Field(
         default_factory=lambda: [
             "scriptwriter",
-            "slidebuilder",
+            "storyboard",
+            "scenegen",
             "voice",
             "video_assembler",
             "transcriber",
@@ -155,6 +173,7 @@ class AppConfig(BaseModel):
     subtitles: SubtitlesSettings = Field(default_factory=SubtitlesSettings)
     thumbnail: ThumbnailSettings = Field(default_factory=ThumbnailSettings)
     publisher: PublisherSettings = Field(default_factory=PublisherSettings)
+    channel: ChannelSettings = Field(default_factory=ChannelSettings)
     pipeline: PipelineSettings = Field(default_factory=PipelineSettings)
 
     # Resolved at load time

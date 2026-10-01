@@ -1,0 +1,36 @@
+version: 1
+
+# Video Production Agent Roles — governing video visual creation
+# (Separate from agentroles.yaml which governs repository software development)
+
+roles:
+  director:
+    primary: anthropic/claude-opus-4-8
+    notes: "Taste-bearing visual director — writes video-plan.md (hook, storyboard, word-anchored reveals, holds) from outline.json + narration durations, per skills/create-video/references/creative-laws.md and plan.md."
+
+  scene-coder:
+    primary: anthropic/claude-sonnet-4-6
+    notes: "Scene Coder — builds one HyperFrames sub-composition per scene from video-plan.md and composition-brief.md, using the HyperFrames skills and registry."
+
+  visual-reviewer:
+    primary: anthropic/claude-sonnet-4-6
+    notes: "Visual Reviewer — runs `npx hyperframes check --snapshots`, inspects stills and contact sheets against creative-laws.md, and requests targeted scene fixes."
+
+  narrator-sync:
+    primary: anthropic/claude-haiku-4-5
+    notes: "Narrator Sync — anchors scene lengths and reveals to narration: durations.json for scene timing, word timestamps for reveal and caption timing."
+
+routing:
+  mode: static
+  dynamic:
+    enabled: false
+    escalate_on: [qa_failure, pacing_mismatch, visual_artifact]
+    cache_aware: true
+
+observability:
+  cost_tracking: true
+  tag_calls_with_role: true
+
+targets:
+  - opencode: ./opencode.json
+  - claude_code: ./.claude/agents/

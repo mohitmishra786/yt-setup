@@ -24,6 +24,7 @@ def test_full_stub_pipeline(tmp_path: Path, monkeypatch) -> None:  # type: ignor
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.setenv("YT_STUDIO_STUB_VOICE", "1")
     monkeypatch.setenv("YT_STUDIO_STUB_TRANSCRIBE", "1")
+    monkeypatch.setenv("YT_STUDIO_STUB_SCENES", "1")
     monkeypatch.setenv("YT_STUDIO_SKIP_VANTAGE", "1")
     monkeypatch.setenv("YT_STUDIO_PUBLISH_DRY_RUN", "1")
 
@@ -36,7 +37,9 @@ def test_full_stub_pipeline(tmp_path: Path, monkeypatch) -> None:  # type: ignor
 
     assert proj.paths.outline.exists()
     assert proj.paths.seo.exists()
-    assert proj.paths.slides.exists()
+    assert (proj.paths.root / "storyboard.json").exists()
+    assert (proj.paths.root / "scenes" / "scene_01.mp4").exists()
+    assert (proj.paths.root / "scenes" / "manifest.json").exists()
     assert proj.paths.final_video.exists()
     assert proj.paths.final_video.stat().st_size > 500
     assert proj.paths.transcript_json.exists()
@@ -53,21 +56,22 @@ def test_resume_skips_completed(tmp_path: Path, monkeypatch) -> None:  # type: i
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.setenv("YT_STUDIO_STUB_VOICE", "1")
     monkeypatch.setenv("YT_STUDIO_STUB_TRANSCRIBE", "1")
+    monkeypatch.setenv("YT_STUDIO_STUB_SCENES", "1")
     monkeypatch.setenv("YT_STUDIO_SKIP_VANTAGE", "1")
     monkeypatch.setenv("YT_STUDIO_PUBLISH_DRY_RUN", "1")
 
     cfg = _cfg(tmp_path)
     proj = Project.create(cfg, "Resume Demo")
 
-    first = Pipeline(cfg).run(proj, only=["scriptwriter", "slidebuilder"])
+    first = Pipeline(cfg).run(proj, only=["scriptwriter", "storyboard"])
     assert first.ok
-    assert first.completed == ["scriptwriter", "slidebuilder"]
+    assert first.completed == ["scriptwriter", "storyboard"]
 
     second = Pipeline(cfg).run(proj)
     assert second.ok, second.error
     assert "scriptwriter" in second.skipped
-    assert "slidebuilder" in second.skipped
-    assert "voice" in second.completed
+    assert "storyboard" in second.skipped
+    assert "scenegen" in second.completed
 
 
 def test_only_stage(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
@@ -76,12 +80,12 @@ def test_only_stage(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-unt
     proj = Project.create(cfg, "Only Stage")
     Pipeline(cfg).run(proj, only=["scriptwriter"])
     assert proj.checkpoint.is_completed("scriptwriter")
-    assert not proj.checkpoint.is_completed("slidebuilder")
+    assert not proj.checkpoint.is_completed("storyboard")
 
 
 def test_dependency_failure(tmp_path: Path) -> None:
     cfg = _cfg(tmp_path)
     proj = Project.create(cfg, "Dep Fail")
-    result = Pipeline(cfg).run(proj, only=["slidebuilder"])
+    result = Pipeline(cfg).run(proj, only=["scenegen"])
     assert not result.ok
-    assert result.failed == "slidebuilder"
+    assert result.failed == "scenegen"

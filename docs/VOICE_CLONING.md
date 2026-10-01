@@ -1,5 +1,11 @@
 # Professional voice cloning (ElevenLabs PVC class)
 
+> **Quick path:** `docs/GUIDE.md` §3. After `prepare-voice`, **always run
+> `python cli.py voice-prompt --voice <id>`**. Chatterbox only conditions on ~10 s of
+> reference audio, so picking the cleanest 10 s matters more than total length. Listen to
+> the audition clips it writes and override with `--start` if another sounds more like you.
+> Prefer recording the narration yourself? Use `python cli.py voice-import` (GUIDE §3 Path B).
+
 You asked for narration that sounds like **you**, not a generic robot voice
 (edge-tts / system TTS). This project targets that with **local voice cloning**
 via [Chatterbox](https://github.com/resemble-ai/chatterbox) (Resemble AI, **MIT**),
