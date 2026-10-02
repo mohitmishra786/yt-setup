@@ -93,7 +93,7 @@ def set_layout(name: str) -> dict:
 def caption_word(word: str) -> str:
     """Scripts spell some names phonetically for the voice; captions show the real names."""
     for spoken, shown in (("G-lib-C", "glibc"), ("J-E-malloc", "jemalloc"), ("G-C-C", "GCC"),
-                          ("G-S", "GS")):
+                          ("G-S", "GS"), ("C-plus-plus", "C++")):
         word = word.replace(spoken, shown)
     return re.sub(r"[Mm]ee-malloc", "mimalloc", word)
 

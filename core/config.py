@@ -117,6 +117,13 @@ class PublisherSettings(BaseModel):
     category_id: str = "27"
     token_path: Path = Path(".credentials/youtube_token.json")
     client_secrets_path: Path = Path(".credentials/client_secret.json")
+    # `cli.py upload` defaults (overridable per plan in publish/upload.json)
+    default_language: str = "en"
+    made_for_kids: bool = False
+    playlist: str = ""
+    # YouTube's altered/synthetic content disclosure (e.g. a cloned voice). None = not decided
+    # yet: `cli.py upload` refuses to run until the creator chooses.
+    contains_synthetic_media: bool | None = None
 
 
 class ChannelSettings(BaseModel):

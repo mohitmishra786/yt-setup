@@ -45,6 +45,19 @@ in `core/config.py`) — never hardcode a channel. Shorts: `skills/create-video/
 opt-in stage (not in `pipeline.stages`); `--only` keeps registry order for such stages. Needs
 Node 22+; `YT_STUDIO_HF_QUALITY=draft|standard|high`.
 
+### Uploading and scheduling (`/upload-video`)
+
+`cli.py youtube-auth` (one-time browser login, checks the channel against `channel.handle`) and
+`cli.py upload --project <id> [--dry-run|--yes|--verify|--only|--no-schedule]` →
+`modules/publisher/scheduler.py`. The plan is `projects/<id>/publish/upload.json` and progress
+goes to `publish/uploaded.json` (resumable; an item with a video id is never re-uploaded).
+YouTube schedules via `status.publishAt` (private until then), so nothing runs at post time.
+Until the Cloud project passes the YouTube API audit, API uploads are locked private. Setup
+walkthrough: `skills/upload-video/references/setup.md`. Tokens use the `youtube.upload` and
+`youtube.force-ssl` scopes. Captions come from the script (`skills/upload-video/scripts/script_srt.py`),
+not `transcript.srt`. The `publisher` pipeline stage still uploads when `.credentials/client_secret.json`
+exists, so pass `--dry-run-publish` on manual `cli.py run`s.
+
 ### Narration quality and sync
 
 - Chatterbox conditions on only the first ~10s of the reference, so `cli.py voice-prompt --voice <id>`

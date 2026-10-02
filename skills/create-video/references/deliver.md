@@ -40,7 +40,8 @@ ffmpeg -v error -i projects/<id>/final.mp4 -vf "fps=1/5,scale=360:-1,tile=6x2" /
 
 Produces `transcript.srt/.json`, `chapters.txt`, auto Shorts (long-form only; skipped if
 Vantage is not running — set `YT_STUDIO_SKIP_VANTAGE=1`), and `publish_manifest.json`.
-Never upload (drop `--dry-run-publish`) unless the user explicitly asks; public uploads
+Uploading and scheduling is `/upload-video` (`cli.py upload`), not this stage. Never upload
+(drop `--dry-run-publish`) unless the user explicitly asks; public uploads
 also need `--privacy public --confirm-public`.
 
 ## Share copy

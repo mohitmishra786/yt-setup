@@ -603,6 +603,144 @@ def pace_cmd(
     )
 
 
+@app.command("youtube-auth")
+def youtube_auth_cmd(
+    relogin: bool = typer.Option(False, "--relogin", help="Ignore the saved token."),
+    config: Optional[Path] = typer.Option(None, "--config", "-c"),
+) -> None:
+    """Log in to YouTube once (browser) and show which channel the token controls."""
+    from modules.publisher.youtube_upload import youtube_service
+
+    cfg = load_config(config)
+    yt = youtube_service(cfg, force_login=relogin)
+    items = yt.channels().list(part="snippet,status", mine=True).execute().get("items") or []
+    if not items:
+        console.print("[red]Logged in, but this Google account has no YouTube channel.[/red]")
+        raise typer.Exit(code=1)
+    for ch in items:
+        sn = ch["snippet"]
+        console.print(
+            f"[green]Authorised[/green] {sn['title']} ({sn.get('customUrl', '')}) "
+            f"channel id {ch['id']}"
+        )
+    want = (cfg.channel.handle or "").lower()
+    if want and not any((c["snippet"].get("customUrl") or "").lower() == want for c in items):
+        console.print(
+            f"[yellow]config.yaml channel.handle is {cfg.channel.handle}, which doesn't match. "
+            "Re-run with --relogin and pick the right account/brand channel.[/yellow]"
+        )
+        raise typer.Exit(code=1)
+
+
+@app.command("upload")
+def upload_cmd(
+    project_id: str = typer.Option(..., "--project", "-p"),
+    plan: Optional[Path] = typer.Option(
+        None, "--plan", help="Default: projects/<id>/publish/upload.json"
+    ),
+    only: Optional[str] = typer.Option(None, "--only", help="Comma-separated item keys."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Validate and show; no API calls."),
+    yes: bool = typer.Option(
+        False, "--yes", help="Skip the prompt (only after the user approved)."
+    ),
+    no_schedule: bool = typer.Option(
+        False, "--no-schedule", help="Ignore publish_at and upload private drafts (test runs)."
+    ),
+    confirm_public: bool = typer.Option(False, "--confirm-public"),
+    verify_only: bool = typer.Option(False, "--verify", help="Only report live status."),
+    config: Optional[Path] = typer.Option(None, "--config", "-c"),
+) -> None:
+    """Upload + schedule a project's video and Shorts from publish/upload.json (resumable)."""
+    from zoneinfo import ZoneInfo
+
+    from modules.publisher import scheduler as sch
+    from modules.publisher.youtube_upload import youtube_service
+
+    ensure_utf8_stdio()
+    cfg = load_config(config)
+    proj = Project.load(cfg, project_id)
+    plan_path = plan or proj.paths.root / "publish" / "upload.json"
+    state_path = proj.paths.root / "publish" / "uploaded.json"
+    state = sch.load_state(state_path)
+
+    if verify_only:
+        _print_verify(sch.verify(youtube_service(cfg), state), state, cfg.channel.timezone)
+        return
+    try:
+        p = sch.load_plan(cfg, proj, plan_path, no_schedule=no_schedule)
+    except (sch.PlanError, FileNotFoundError) as exc:
+        console.print(f"[red]Plan problems in {plan_path}:[/red]\n{exc}")
+        raise typer.Exit(code=1) from exc
+    keys = set(_parse_csv(only) or []) or None
+    if keys and (missing := keys - {i.key for i in p.items}):
+        console.print(f"[red]Unknown --only keys: {', '.join(sorted(missing))}[/red]")
+        raise typer.Exit(code=1)
+    items = [i for i in p.items if not keys or i.key in keys]
+    public_now = [i.key for i in items if i.privacy == "public" and i.publish_at is None]
+    if public_now and not confirm_public:
+        console.print(f"[red]{', '.join(public_now)} would go public immediately; "
+                      "add --confirm-public if that is intended.[/red]")
+        raise typer.Exit(code=1)
+
+    tz = ZoneInfo(p.timezone)
+    table = Table(title=f"Upload plan: {proj.project_id}")
+    for col in ("key", "kind", "file", "goes live", "title", "state"):
+        table.add_column(col)
+    pending = 0
+    for i in items:
+        done = (state.get(i.key) or {}).get("video_id")
+        pending += 0 if done else 1
+        when = (f"{i.publish_at.astimezone(tz):%a %d %b %H:%M} {p.timezone}\n"
+                f"({sch.rfc3339(i.publish_at)})" if i.publish_at else f"never ({i.privacy})")
+        table.add_row(i.key, i.kind,
+                      f"{i.file.name}\n{i.duration:.0f}s {i.width}x{i.height}", when, i.title,
+                      f"uploaded {done}" if done else "pending")
+    console.print(table)
+    console.print(
+        f"synthetic-media disclosure: {p.synthetic} · made for kids: {p.made_for_kids} · "
+        f"category {p.category_id} · language {p.language} · playlist: {p.playlist or '-'}"
+    )
+    for w in p.warnings:
+        console.print(f"[yellow]warning: {w}[/yellow]")
+    if dry_run:
+        console.print(f"[cyan]Dry run: {pending} upload(s) pending; nothing sent.[/cyan]")
+        return
+    if pending and not yes and not typer.confirm(f"Upload {pending} video(s) to YouTube?"):
+        raise typer.Exit(code=1)
+
+    yt = youtube_service(cfg)
+    state = sch.execute(yt, p, state_path, only=keys)
+    _print_verify(sch.verify(yt, state), state, p.timezone)
+    console.print(f"Video ids saved in {proj.rel(state_path)}. Re-run the same command to retry "
+                  "failed steps; finished uploads are never repeated.")
+
+
+def _print_verify(rows: list[dict], state: dict, tz_name: str) -> None:
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    key_of = {v["video_id"]: k for k, v in state.items()
+              if not k.startswith("_") and isinstance(v, dict) and v.get("video_id")}
+    table = Table(title="Live status on YouTube")
+    for col in ("key", "url", "privacy", "publishes", "upload", "steps", "problem"):
+        table.add_column(col)
+    for r in rows:
+        key = key_of.get(r["video_id"], "?")
+        when = "-"
+        if r["publish_at"]:
+            dt = datetime.fromisoformat(r["publish_at"].replace("Z", "+00:00"))
+            when = f"{dt.astimezone(ZoneInfo(tz_name)):%a %d %b %H:%M}"
+        steps = ", ".join(f"{k}={'ok' if v is True else v}"
+                          for k, v in (state.get(key, {}).get("steps") or {}).items())
+        table.add_row(key, f"https://youtu.be/{r['video_id']}", str(r["privacy"]), when,
+                      str(r["upload"]), steps or "-", str(r["problem"] or ""))
+    console.print(table)
+    if any(r["privacy"] == "private" and not r["publish_at"] for r in rows):
+        console.print("[yellow]Private with no publish time: fine for test uploads. If you "
+                      "scheduled it, the API project is probably not audited yet (see "
+                      "skills/upload-video/references/api-facts.md).[/yellow]")
+
+
 @app.command("batch")
 def batch_cmd(
     topics_file: Path = typer.Argument(
