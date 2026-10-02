@@ -158,7 +158,9 @@ Follow `references/publish.md`:
 - Write `publish/video.md`, `publish/shorts.md` and `publish/schedule.md`. Schedule times use
   `channel.timezone` and `channel.post_time`.
 
-Never upload or publish without the user's explicit go-ahead.
+Also write `publish/upload.json` (the machine plan: `skills/upload-video/references/plan-format.md`)
+so `/upload-video` can schedule everything. Never upload or publish without the user's explicit
+go-ahead; uploading and scheduling is the `/upload-video` skill.
 
 ## Gates (do not skip)
 

@@ -85,6 +85,13 @@ publisher:
   category_id: "27"
   token_path: .credentials/youtube_token.json
   client_secrets_path: .credentials/client_secret.json
+  # cli.py upload defaults (skills/upload-video); a plan's publish/upload.json can override
+  default_language: en
+  made_for_kids: false
+  playlist: ""                     # playlist title for items with "playlist": true
+  # YouTube AI-content disclosure (cloned voice etc.). Leave unset until the creator decides;
+  # cli.py upload refuses to run while it is unset. true | false
+  # contains_synthetic_media: true
 
 channel:
   # Branding for the agent-made videos (title card, outro, Shorts, publish kit).

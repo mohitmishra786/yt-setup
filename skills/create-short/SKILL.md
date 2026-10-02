@@ -147,7 +147,8 @@ Write `projects/<id>/publish/short.md` following `references/publish.md`:
 - a posting slot in `channel.timezone`, added to any existing `schedule.md`
 - the related long video
 
-Also write `share-copy.txt`. **Never upload without the user's explicit go-ahead.**
+Also write `share-copy.txt`. **Never upload without the user's explicit go-ahead**; when they want it posted or scheduled,
+hand over to `/upload-video` (one-item `publish/upload.json`).
 
 ## Gates (do not skip)
 

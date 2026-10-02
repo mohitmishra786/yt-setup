@@ -7,32 +7,44 @@ import os
 from pathlib import Path
 from typing import Any
 
+from core.config import AppConfig
 from core.logging_setup import get_logger
 from core.project import Project
 from core.stages import StageResult
 from core.stub_utils import write_json
+
 from modules.thumbnail.generate_thumbnail import generate_thumbnail
 
 log = get_logger(__name__)
 
-SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+# upload: videos.insert + thumbnails.set; force-ssl: captions, playlists, comments, videos.list
+SCOPES = [
+    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube.force-ssl",
+]
+
+
+def _resolve(config: AppConfig, p: Path) -> Path:
+    return p if p.is_absolute() else (config.repo_root / p).resolve()
 
 
 def _resolve_path(project: Project, p: Path) -> Path:
-    if p.is_absolute():
-        return p
-    return (project.config.repo_root / p).resolve()
+    return _resolve(project.config, p)
 
 
-def get_youtube_service(project: Project) -> Any:
-    """OAuth desktop flow; caches token under .credentials/."""
+def youtube_service(config: AppConfig, *, force_login: bool = False) -> Any:
+    """OAuth desktop flow; caches the token under .credentials/ and refreshes it silently.
+
+    Opens a browser only when there is no usable token (first run, revoked, or a token that
+    predates a scope added to SCOPES) or when `force_login` is set.
+    """
     from google.auth.transport.requests import Request
     from google.oauth2.credentials import Credentials
     from google_auth_oauthlib.flow import InstalledAppFlow
     from googleapiclient.discovery import build
 
-    token_path = _resolve_path(project, project.config.publisher.token_path)
-    secrets = _resolve_path(project, project.config.publisher.client_secrets_path)
+    token_path = _resolve(config, config.publisher.token_path)
+    secrets = _resolve(config, config.publisher.client_secrets_path)
     if not secrets.exists():
         raise FileNotFoundError(
             f"YouTube OAuth client secrets not found: {secrets}. "
@@ -40,18 +52,30 @@ def get_youtube_service(project: Project) -> Any:
         )
 
     creds: Credentials | None = None
-    if token_path.exists():
-        creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
+    if token_path.exists() and not force_login:
+        creds = Credentials.from_authorized_user_file(str(token_path))
+        if not creds.has_scopes(SCOPES):
+            log.info("Saved YouTube token lacks required scopes; logging in again")
+            creds = None
+    changed = False
+    if creds and not creds.valid and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+        changed = True
     if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(str(secrets), SCOPES)
-            creds = flow.run_local_server(port=0)
+        flow = InstalledAppFlow.from_client_secrets_file(str(secrets), SCOPES)
+        # prompt=consent guarantees a refresh token even if this account consented before
+        creds = flow.run_local_server(port=0, prompt="consent")
+        changed = True
+    if changed:
         token_path.parent.mkdir(parents=True, exist_ok=True)
         token_path.write_text(creds.to_json(), encoding="utf-8")
+        token_path.chmod(0o600)
 
     return build("youtube", "v3", credentials=creds, cache_discovery=False)
+
+
+def get_youtube_service(project: Project) -> Any:
+    return youtube_service(project.config)
 
 
 def upload_video(

@@ -54,6 +54,10 @@ Then pull 3–4 frames per Short and look at them before handing over.
   - a review day with concrete thresholds (CTR, drop-off point)
   - times in `channel.timezone` at `channel.post_time`, noting the US-morning equivalent
 
+- **`upload.json`:** the same titles, descriptions, tags and dates as a machine plan for
+  `/upload-video` (format: `skills/upload-video/references/plan-format.md`). Use `{url:video}`
+  where the Shorts say `<FULL VIDEO LINK>`; no `<` or `>` anywhere.
+
 Rules:
 - Every factual line in titles and descriptions must be something the video actually shows.
 - No clickbait the video doesn't pay off.
