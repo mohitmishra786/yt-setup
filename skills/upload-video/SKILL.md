@@ -19,6 +19,12 @@ upload defaults from `config.yaml` → `publisher:`. Never hardcode a channel. T
 dry run and get an explicit "yes" before any real upload, every time. Never use
 `--confirm-public` unless they asked for an immediate public post.
 
+**How it fits together** (also the diagrams submitted with the API audit; regenerate for any
+channel with `scripts/audit_evidence.py`):
+
+![Architecture](assets/diagrams/architecture-diagram.png)
+![User flow](assets/diagrams/user-flow-diagram.png)
+
 ## 0. Is this machine connected?
 
 ```bash
@@ -29,7 +35,7 @@ dry run and get an explicit "yes" before any real upload, every time. Never use
 - **"client secrets not found"** → first-time setup. Walk the creator through
   `references/setup.md` **one part at a time** (it is all browser clicks in Google Cloud; ask
   for a screenshot when they are unsure — the console UI moves around). Do the parts you can
-  yourself: moving the downloaded JSON, publishing the privacy-policy page with `gh` (only when
+  yourself: moving the downloaded JSON, publishing the policy site with `gh` (only when
   they ask you to; it creates a public repo under their account).
 - **Browser login needed** → the creator runs it with a leading `!` in the Claude Code prompt
   (`! .venv/bin/python cli.py youtube-auth`) so the browser opens on their machine.
@@ -145,6 +151,9 @@ The API cannot do these; list them per date from `schedule.md`:
   Shorts detection, what the API can't do), with sources.
 - `references/plan-format.md` — `upload.json` schema and a complete example.
 - `scripts/script_srt.py` — exact-script captions.
-- `assets/privacy-policy.md` — privacy-policy template for the OAuth consent screen.
+- `assets/site/` — homepage, privacy-policy and terms templates for the consent screen and the
+  audit (GitHub Pages).
+- `scripts/audit_evidence.py` — architecture / user-flow diagrams and real CLI output as PNGs
+  for the audit form; `assets/diagrams/` holds the KernelKafe versions.
 - Code: `cli.py upload` / `cli.py youtube-auth` → `modules/publisher/scheduler.py`,
   `modules/publisher/youtube_upload.py`; tests in `tests/test_upload_scheduler.py`.
