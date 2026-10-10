@@ -30,7 +30,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from scenekit import CHANNEL  # noqa: E402  (channel branding from config.yaml)
+# channel branding from config.yaml; caption_word maps phonetic spellings back to real names
+from scenekit import CHANNEL, caption_word  # noqa: E402
 from scenekit import K as KIT  # noqa: E402
 
 W, H = 1080, 1920
@@ -41,11 +42,6 @@ CLIP_H = round(CROP[3] * W / CROP[2] / 2) * 2
 CLIP_Y = 500
 INK, INK2, BG = "#e9eaec", "#9aa0a8", "#121417"
 MAX_S = 60.0
-
-
-def caption_word(word: str) -> str:
-    word = word.replace("G-lib-C", "glibc").replace("J-E-malloc", "jemalloc")
-    return re.sub(r"[Mm]ee-malloc", "mimalloc", word)
 
 
 def scene_slots(index_html: str) -> dict[int, tuple[float, float]]:
@@ -119,7 +115,8 @@ def build(project: Path, spec: dict, accent: str, draft: bool) -> Path:
         b = offset + chunk[-1]["end"] + 0.25
         if k + 1 < len(timed):  # never two caption chunks on screen at once
             nxt_off, nxt = timed[k + 1]
-            b = min(b, nxt_off + max(0.0, nxt[0]["start"] - 0.06) - 0.01)
+            # end >= 2 frames before the next chunk, so no rendered frame shows both
+            b = min(b, nxt_off + max(0.0, nxt[0]["start"] - 0.06) - 0.07)
         js.append(f'tl.set("#cap{c}",{{opacity:1}},{a:.3f});tl.set("#cap{c}",{{opacity:0}},{b:.3f});')
         for j, w in enumerate(chunk):
             js.append(f'tl.set("#w{c}_{j}",{{opacity:1}},{offset + w["start"] - 0.02:.3f});')
